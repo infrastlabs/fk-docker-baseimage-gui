@@ -25,20 +25,6 @@ ARG DEBIAN_PKGS="\
     openssl \
 "
 
-# Get Dockerfile cross-compilation helpers.
-FROM --platform=$BUILDPLATFORM tonistiigi/xx AS xx
-
-# Build UPX.
-FROM --platform=$BUILDPLATFORM alpine:3.15 AS upx
-RUN export domain="mirrors.ustc.edu.cn"; \
-  echo "http://$domain/alpine/v3.15/main" > /etc/apk/repositories; \
-  echo "http://$domain/alpine/v3.15/community" >> /etc/apk/repositories
-RUN apk --no-cache add build-base curl make cmake git && \
-    mkdir /tmp/upx && \
-    curl -# -L https://github.com/upx/upx/releases/download/v4.0.1/upx-4.0.1-src.tar.xz | tar xJ --strip 1 -C /tmp/upx && \
-    make -C /tmp/upx build/release-gcc -j$(nproc) && \
-    cp -v /tmp/upx/build/release-gcc/upx /usr/bin/upx
-
 # Build TigerVNC server.
 FROM --platform=$BUILDPLATFORM alpine:3.15 AS tigervnc
 ARG TARGETPLATFORM
@@ -57,8 +43,8 @@ FROM --platform=$BUILDPLATFORM alpine:3.15 AS xdpyprobe
 ARG TARGETPLATFORM
 # COPY --from=xx / /
 COPY src/xdpyprobe /tmp/xdpyprobe
-RUN apk --no-cache add make clang
-RUN xx-apk --no-cache add gcc musl-dev libx11-dev libx11-static libxcb-static
+# RUN apk --no-cache add make clang
+# RUN xx-apk --no-cache add gcc musl-dev libx11-dev libx11-static libxcb-static
 RUN CC=xx-clang \
     make -C /tmp/xdpyprobe
 RUN xx-verify --static /tmp/xdpyprobe/xdpyprobe

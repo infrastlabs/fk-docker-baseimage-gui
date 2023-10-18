@@ -40,6 +40,19 @@ builder)
     # --network=host: docker buildx create --use --name mybuilder2 --buildkitd-flags '--allow-insecure-entitlement network.host'
     docker buildx build $cache $plat --push -t $ns/$img -f src/../Dockerfile.builder . 
     ;;
+flux)
+    repo=registry-1.docker.io
+    img="x11-base:fluxbox"
+    # cache
+    ali="registry.cn-shenzhen.aliyuncs.com"
+    cimg="x11-base-cache:fluxbox"
+    cache="--cache-from type=registry,ref=$ali/$ns/$cimg --cache-to type=registry,ref=$ali/$ns/$cimg"
+    
+    plat="--platform linux/amd64,linux/arm64,linux/arm" #,linux/arm
+    # plat="--platform linux/arm"
+    cd flux
+    docker buildx build $cache $plat --push -t $ns/$img -f Dockerfile . 
+    ;;
 *) #compile
     # TigerVNC 1.12.0 |10 Nov 2021
     # old=$(pwd); cd src/..
@@ -54,9 +67,14 @@ builder)
     #  
     repo=registry-1.docker.io
     img="x11-base:compile"
+    # cache
+    ali="registry.cn-shenzhen.aliyuncs.com"
+    cimg="x11-base-cache:compile"
+    cache="--cache-from type=registry,ref=$ali/$ns/$cimg --cache-to type=registry,ref=$ali/$ns/$cimg"
+    
     plat="--platform linux/amd64,linux/arm64,linux/arm" #,linux/arm
     # plat="--platform linux/arm" #
-    plat="--platform linux/amd64" #6m
+    # plat="--platform linux/amd64" #6m
     args="--provenance=false"
     args="""
     --provenance=false 
@@ -65,7 +83,7 @@ builder)
     --build-arg COMPILE_TIGER=yes
     """
     # --network=host: docker buildx create --use --name mybuilder2 --buildkitd-flags '--allow-insecure-entitlement network.host'
-    docker buildx build $plat $args --push -t $ns/$img -f src/../Dockerfile . 
+    docker buildx build $cache $plat $args --push -t $ns/$img -f src/../Dockerfile . 
     err=$?
     test "0" == "$err" && build_rootfs || exit $err
     ;;          

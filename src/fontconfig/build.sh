@@ -17,7 +17,7 @@ FONTCONFIG_VERSION=2.14.0
 
 # Define software download URLs.
 FONTCONFIG_URL=https://www.freedesktop.org/software/fontconfig/release/fontconfig-${FONTCONFIG_VERSION}.tar.gz
-test -z "$targetDir" && export targetDir=/opt/base
+test -z "$TARGETPATH" && export TARGETPATH=/opt/base
 function down_catfile(){
   url=$1
   file=${url##*/}
@@ -63,10 +63,10 @@ function log {
 # Only the fonts used by JWM are installed.
 #
 log "Installing Noto fonts..."
-mkdir -p /tmp/fontconfig-install${targetDir}/share/fonts
+mkdir -p /tmp/fontconfig-install${TARGETPATH}/share/fonts
 for FONT in Arimo-Regular Arimo-Bold
 do
-    \cp -v /usr/share/fonts/noto/$FONT.ttf /tmp/fontconfig-install${targetDir}/share/fonts/
+    \cp -v /usr/share/fonts/noto/$FONT.ttf /tmp/fontconfig-install${TARGETPATH}/share/fonts/
 done
 
 #
@@ -87,10 +87,10 @@ log "Configuring fontconfig..."
         --build=$(TARGETPLATFORM= xx-clang --print-target-triple) \
         --host=$(xx-clang --print-target-triple) \
         --prefix=/usr \
-        --with-default-fonts=${targetDir}/share/fonts \
-        --with-baseconfigdir=${targetDir}/share/fontconfig \
-        --with-configdir=${targetDir}/share/fontconfig/conf.d \
-        --with-templatedir=${targetDir}/share/fontconfig/conf.avail \
+        --with-default-fonts=${TARGETPATH}/share/fonts \
+        --with-baseconfigdir=${TARGETPATH}/share/fontconfig \
+        --with-configdir=${TARGETPATH}/share/fontconfig/conf.d \
+        --with-templatedir=${TARGETPATH}/share/fontconfig/conf.avail \
         --with-cache-dir=/config/xdg/cache/fontconfig \
         --disable-shared \
         --enable-static \

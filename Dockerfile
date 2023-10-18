@@ -5,7 +5,8 @@
 # https://github.com/jlesage/docker-baseimage-gui
 #
 
-ARG BASEIMAGE=unknown
+# ARG BASEIMAGE=unknown
+ARG BASEIMAGE=alpine:3.15
 
 # Define the Alpine packages to be installed into the image.
 ARG ALPINE_PKGS="\
@@ -26,11 +27,22 @@ ARG DEBIAN_PKGS="\
 "
 
 # Build TigerVNC server.
-FROM --platform=$BUILDPLATFORM alpine:3.15 AS tigervnc
+FROM --platform=$BUILDPLATFORM infrastlabs/x11-base:builder AS tigervnc
 ARG TARGETPLATFORM
 # COPY --from=xx / /
 COPY src/tigervnc /build
-RUN /build/build.sh
+ENV targetDir=/usr
+# build.sh: split multi steps, to speed up
+RUN sh /build/build.sh gnutls
+# RUN /build/build.sh libxfont2
+# RUN /build/build.sh libfontenc
+# RUN /build/build.sh libtasn1
+# RUN /build/build.sh libxshmfence
+# RUN /build/build.sh tigervnc
+# # 
+# RUN /build/build.sh xkb
+# RUN /build/build.sh xkbcomp
+# 
 RUN xx-verify --static /tmp/tigervnc-install/usr/bin/Xvnc
 RUN xx-verify --static /tmp/tigervnc-install/usr/bin/vncpasswd
 # COPY --from=upx /usr/bin/upx /usr/bin/upx
@@ -39,27 +51,28 @@ RUN upx /tmp/tigervnc-install/usr/bin/vncpasswd
 
 # Build xdpyprobe.
 # Used to determine if the X server (Xvnc) is ready.
-FROM --platform=$BUILDPLATFORM alpine:3.15 AS xdpyprobe
+FROM --platform=$BUILDPLATFORM infrastlabs/x11-base:builder AS xdpyprobe
 ARG TARGETPLATFORM
 # COPY --from=xx / /
 COPY src/xdpyprobe /tmp/xdpyprobe
 # RUN apk --no-cache add make clang
 # RUN xx-apk --no-cache add gcc musl-dev libx11-dev libx11-static libxcb-static
-RUN CC=xx-clang \
-    make -C /tmp/xdpyprobe
-RUN xx-verify --static /tmp/xdpyprobe/xdpyprobe
-# COPY --from=upx /usr/bin/upx /usr/bin/upx
-RUN upx /tmp/xdpyprobe/xdpyprobe
+# 
+# RUN CC=xx-clang \
+#     make -C /tmp/xdpyprobe
+# RUN xx-verify --static /tmp/xdpyprobe/xdpyprobe
+# # COPY --from=upx /usr/bin/upx /usr/bin/upx
+# RUN upx /tmp/xdpyprobe/xdpyprobe
 
 # Build Fontconfig.
-# FROM --platform=$BUILDPLATFORM alpine:3.15 AS fontconfig
+# FROM --platform=$BUILDPLATFORM infrastlabs/x11-base:builder AS fontconfig
 # ARG TARGETPLATFORM
 # # COPY --from=xx / /
 # COPY src/fontconfig/build.sh /tmp/build-fontconfig.sh
 # RUN /tmp/build-fontconfig.sh
 
 # Build Openbox.
-# FROM --platform=$BUILDPLATFORM alpine:3.15 AS openbox
+# FROM --platform=$BUILDPLATFORM infrastlabs/x11-base:builder AS openbox
 # ARG TARGETPLATFORM
 # # COPY --from=xx / /
 # COPY --from=fontconfig /tmp/fontconfig-install /tmp/fontconfig-install
@@ -73,7 +86,7 @@ RUN upx /tmp/xdpyprobe/xdpyprobe
 # RUN upx /tmp/openbox-install/usr/bin/obxprop
 
 # Build yad.
-# FROM --platform=$BUILDPLATFORM alpine:3.15 AS yad
+# FROM --platform=$BUILDPLATFORM infrastlabs/x11-base:builder AS yad
 # ARG TARGETPLATFORM
 # # COPY --from=xx / /
 # COPY --from=fontconfig /tmp/fontconfig-install /tmp/fontconfig-install
@@ -84,7 +97,7 @@ RUN upx /tmp/xdpyprobe/xdpyprobe
 # RUN upx /tmp/yad-install/usr/bin/yad
 
 # Build Nginx.
-# FROM --platform=$BUILDPLATFORM alpine:3.15 AS nginx
+# FROM --platform=$BUILDPLATFORM infrastlabs/x11-base:builder AS nginx
 # ARG TARGETPLATFORM
 # # COPY --from=xx / /
 # COPY src/nginx/build.sh /tmp/build-nginx.sh
@@ -97,7 +110,7 @@ RUN upx /tmp/xdpyprobe/xdpyprobe
 # RUN apk --no-cache add libcap && setcap cap_net_bind_service=ep /tmp/nginx-install/sbin/nginx
 
 # Build noVNC.
-# FROM --platform=$BUILDPLATFORM alpine:3.15 AS noVNC
+# FROM --platform=$BUILDPLATFORM infrastlabs/x11-base:builder AS noVNC
 # ARG NOVNC_VERSION=1.4.0
 # ARG BOOTSTRAP_VERSION=5.1.3
 # ARG BOOTSTRAP_NIGHTSHADE_VERSION=1.1.3
@@ -161,7 +174,7 @@ RUN upx /tmp/xdpyprobe/xdpyprobe
 #     install_app_icon.sh --no-tools-install "$APP_ICON_URL"
 
 # Generate default DH params.
-# FROM --platform=$BUILDPLATFORM alpine:3.15 AS dhparam
+# FROM --platform=$BUILDPLATFORM infrastlabs/x11-base:builder AS dhparam
 # RUN apk --no-cache add openssl
 # RUN echo "Generating default DH parameters (2048 bits)..."
 # RUN openssl dhparam \
@@ -178,30 +191,30 @@ WORKDIR /tmp
 # Install system packages.
 ARG ALPINE_PKGS
 ARG DEBIAN_PKGS
-RUN \
-    if [ -n "$(which apk)" ]; then \
-        add-pkg ${ALPINE_PKGS}; \
-    else \
-        add-pkg ${DEBIAN_PKGS}; \
-    fi && \
-    # Remove some unneeded stuff.
-    rm -rf /var/cache/fontconfig/*
+# RUN \
+#     if [ -n "$(which apk)" ]; then \
+#         add-pkg ${ALPINE_PKGS}; \
+#     else \
+#         add-pkg ${DEBIAN_PKGS}; \
+#     fi && \
+#     # Remove some unneeded stuff.
+#     rm -rf /var/cache/fontconfig/*
 
 # Add files.
-COPY --link helpers/* /opt/base/bin/
-COPY --link rootfs/ /
-COPY --link --from=tigervnc /tmp/tigervnc-install/usr/bin/Xvnc /opt/base/bin/
-COPY --link --from=tigervnc /tmp/tigervnc-install/usr/bin/vncpasswd /opt/base/bin/
-COPY --link --from=tigervnc /tmp/xkb-install/usr/share/X11/xkb /opt/base/share/X11/xkb
-COPY --link --from=tigervnc /tmp/xkbcomp-install/usr/bin/xkbcomp /opt/base/bin/
-COPY --link --from=xdpyprobe /tmp/xdpyprobe/xdpyprobe /opt/base/bin/
+# COPY --link helpers/* /rootfs/usr/bin/
+# COPY --link rootfs/ /
+COPY --link --from=tigervnc /tmp/tigervnc-install/usr/bin/Xvnc /rootfs/usr/bin/
+COPY --link --from=tigervnc /tmp/tigervnc-install/usr/bin/vncpasswd /rootfs/usr/bin/
+COPY --link --from=tigervnc /tmp/xkb-install/usr/share/X11/xkb /rootfs/usr/share/X11/xkb
+COPY --link --from=tigervnc /tmp/xkbcomp-install/usr/bin/xkbcomp /rootfs/usr/bin/
+# COPY --link --from=xdpyprobe /tmp/xdpyprobe/xdpyprobe /rootfs/usr/bin/
 # 
 # COPY --link --from=fontconfig /tmp/fontconfig-install/opt /opt
-# COPY --link --from=openbox /tmp/openbox-install/usr/bin/openbox /opt/base/bin/
-# COPY --link --from=openbox /tmp/openbox-install/usr/bin/obxprop /opt/base/bin/
-# COPY --link --from=yad /tmp/yad-install/usr/bin/yad /opt/base/bin/
+# COPY --link --from=openbox /tmp/openbox-install/usr/bin/openbox /rootfs/usr/bin/
+# COPY --link --from=openbox /tmp/openbox-install/usr/bin/obxprop /rootfs/usr/bin/
+# COPY --link --from=yad /tmp/yad-install/usr/bin/yad /rootfs/usr/bin/
 # 
-# COPY --link --from=nginx /tmp/nginx-install /opt/base/
+# COPY --link --from=nginx /tmp/nginx-install /rootfs/usr/
 # COPY --link --from=dhparam /tmp/dhparam.pem /defaults/
 # COPY --link --from=noVNC /opt/noVNC /opt/noVNC
 

@@ -11,7 +11,7 @@
 #
 
 set -e # Exit immediately if a command exits with a non-zero status.
-set -u # Treat unset variables as an error.
+# set -u # Treat unset variables as an error.
 
 # Define software versions.
 TIGERVNC_VERSION=1.13.1
@@ -44,7 +44,8 @@ LIBXSHMFENCE_URL=https://www.x.org/releases/individual/lib/libxshmfence-${LIBXSH
 XKEYBOARDCONFIG_URL=https://www.x.org/archive/individual/data/xkeyboard-config/xkeyboard-config-${XKEYBOARDCONFIG_VERSION}.tar.bz2
 XKBCOMP_URL=https://www.x.org/releases/individual/app/xkbcomp-${XKBCOMP_VERSION}.tar.bz2
 
-test -z "$targetDir" && export targetDir=/opt/base
+# set -u; err if not exist
+test -z "$TARGETPATH" && export TARGETPATH=/opt/base
 function down_catfile(){
   url=$1
   file=${url##*/}
@@ -150,7 +151,6 @@ log "Compiling GNU TLS..."
 make -C /tmp/gnutls -j$(nproc)
 log "Installing GNU TLS..."
 make DESTDIR=$(xx-info sysroot) -C /tmp/gnutls install
-echo "finished."
 }
 
 #
@@ -179,7 +179,6 @@ sed 's/^noinst_PROGRAMS = /#noinst_PROGRAMS = /' -i /tmp/libxfont2/Makefile.in
 make -C /tmp/libxfont2 -j$(nproc)
 log "Installing libXfont2..."
 make DESTDIR=$(xx-info sysroot) -C /tmp/libxfont2 install
-echo "finished."
 }
 
 #
@@ -205,7 +204,6 @@ log "Compiling libfontenc..."
 make -C /tmp/libfontenc -j$(nproc)
 log "Installing libfontenc..."
 make DESTDIR=$(xx-info sysroot) -C /tmp/libfontenc install
-echo "finished."
 }
 
 #
@@ -230,7 +228,6 @@ log "Compiling libtasn1..."
 make -C /tmp/libtasn1 -j$(nproc)
 log "Installing libtasn1..."
 make DESTDIR=$(xx-info sysroot) -C /tmp/libtasn1 install
-echo "finished."
 }
 
 #
@@ -256,7 +253,6 @@ log "Compiling libxshmfence..."
 make -C /tmp/libxshmfence -j$(nproc)
 log "Installing libxshmfence..."
 make DESTDIR=$(xx-info sysroot) -C /tmp/libxshmfence install
-echo "finished."
 }
 
 #
@@ -311,9 +307,9 @@ autoreconf -fiv /tmp/tigervnc/unix/xserver
         --prefix=/usr \
         --sysconfdir=/etc/X11 \
         --localstatedir=/var \
-        --with-xkb-path=${targetDir}/share/X11/xkb \
+        --with-xkb-path=${TARGETPATH}/share/X11/xkb \
         --with-xkb-output=/var/lib/xkb \
-        --with-xkb-bin-directory=${targetDir}/bin \
+        --with-xkb-bin-directory=${TARGETPATH}/bin \
         --with-default-font-path=/usr/share/fonts/misc,/usr/share/fonts/100dpi:unscaled,/usr/share/fonts/75dpi:unscaled,/usr/share/fonts/TTF,/usr/share/fonts/Type1 \
         --disable-docs \
         --disable-unit-tests \
@@ -368,7 +364,6 @@ make DESTDIR=/tmp/tigervnc-install -C /tmp/tigervnc/unix/xserver install
 
 log "Installing TigerVNC vncpasswd tool..."
 make DESTDIR=/tmp/tigervnc-install -C /tmp/tigervnc/unix/vncpasswd install
-echo "finished."
 }
 
 #
@@ -423,7 +418,6 @@ TO_KEEP="
 "
 find /tmp/xkb-install/usr/share/X11/xkb -mindepth 2 -maxdepth 2 -type d -print -exec rm -r {} ';'
 find /tmp/xkb-install/usr/share/X11/xkb -mindepth 1 ! -type d $(printf "! -wholename /tmp/xkb-install/usr/share/X11/xkb/%s " $(echo "$TO_KEEP")) -print -delete
-echo "finished."
 }
 
 #
@@ -449,9 +443,33 @@ make -C /tmp/xkbcomp -j$(nproc)
 
 log "Installing xkbcomp..."
 make DESTDIR=/tmp/xkbcomp-install -C /tmp/xkbcomp install
-echo "finished."
 }
 
+function cache(){
+    down_catfile ${GNUTLS_URL} > /dev/null
+    down_catfile ${LIBXFONT2_URL} > /dev/null
+    down_catfile ${LIBFONTENC_URL} > /dev/null
+    down_catfile ${LIBTASN1_URL} > /dev/null
+    down_catfile ${LIBXSHMFENCE_URL} > /dev/null
+    # 
+    down_catfile ${TIGERVNC_URL} > /dev/null
+    down_catfile ${XSERVER_URL} > /dev/null
+    down_catfile ${XKEYBOARDCONFIG_URL} > /dev/null
+    down_catfile ${XKBCOMP_URL} > /dev/null
+}
+
+
+function print_time_cost(){
+    local begin_time=$1
+	gawk 'BEGIN{
+		print "本操作从" strftime("%Y年%m月%d日%H:%M:%S",'$begin_time'),"开始 ,",
+		strftime("到%Y年%m月%d日%H:%M:%S",systime()) ,"结束,",
+		" 共历时" systime()-'$begin_time' "秒";
+	}' 2>&1 | tee -a $logfile
+}
+
+# rm -rf /tmp/logs; #avoid deleted @batch-mode
+mkdir -p /tmp/logs
 case "$1" in
 full)
     gnutls
@@ -464,7 +482,32 @@ full)
     xkb
     xkbcomp
     ;;
+cache)
+    cache
+    ;;
+b_deps)
+    /build/build.sh gnutls &
+    /build/build.sh libxfont2 &
+    /build/build.sh libfontenc &
+    /build/build.sh libtasn1 &
+    /build/build.sh libxshmfence &
+    wait
+    ;;
+b_tiger)
+    /build/build.sh tigervnc &
+    /build/build.sh xkb &
+    /build/build.sh xkbcomp &
+    wait
+    ;;
 *) #compile
-    $1
+    # $1 |tee /tmp/logs/$1.log
+    
+    echo -e "\n$1, start building.."
+    begin_time="`gawk 'BEGIN{print systime()}'`"; export logfile=/tmp/logs/$1.log
+    $1 > $logfile 2>&1; print_time_cost $begin_time
+    
+    test "0" !=  "$?" && tail -200 $logfile || echo "err 0, pass"
+    echo "$1, finished."
     ;;          
 esac
+exit 0

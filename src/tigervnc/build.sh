@@ -61,55 +61,55 @@ function log {
 #
 # Install required packages.
 #
-log "Installing required Alpine packages..."
-apk --no-cache add \
-    curl \
-    build-base \
-    clang \
-    cmake \
-    autoconf \
-    automake \
-    libtool \
-    pkgconf \
-    meson \
-    util-macros \
-    font-util-dev \
-    xtrans \
+# log "Installing required Alpine packages..."
+# apk --no-cache add \
+#     curl \
+#     build-base \
+#     clang \
+#     cmake \
+#     autoconf \
+#     automake \
+#     libtool \
+#     pkgconf \
+#     meson \
+#     util-macros \
+#     font-util-dev \
+#     xtrans \
 
-xx-apk --no-cache --no-scripts add \
-    g++ \
-    xcb-util-dev \
-    pixman-dev \
-    libx11-dev \
-    libgcrypt-dev \
-    libgcrypt-static \
-    libgpg-error-static \
-    libxkbfile-dev \
-    libxfont2-dev \
-    libjpeg-turbo-dev \
-    nettle-dev \
-    libunistring-dev \
-    gnutls-dev \
-    fltk-dev \
-    libxrandr-dev \
-    libxtst-dev \
-    freetype-dev \
-    libfontenc-dev \
-    zlib-dev \
-    libx11-static \
-    libxcb-static \
-    zlib-static \
-    pixman-static \
-    libjpeg-turbo-static \
-    freetype-static \
-    libpng-static \
-    bzip2-static \
-    brotli-static \
-    libunistring-static \
-    nettle-static \
-    gettext-static \
-    libunistring-dev \
-    libbsd-dev \
+# xx-apk --no-cache --no-scripts add \
+#     g++ \
+#     xcb-util-dev \
+#     pixman-dev \
+#     libx11-dev \
+#     libgcrypt-dev \
+#     libgcrypt-static \
+#     libgpg-error-static \
+#     libxkbfile-dev \
+#     libxfont2-dev \
+#     libjpeg-turbo-dev \
+#     nettle-dev \
+#     libunistring-dev \
+#     gnutls-dev \
+#     fltk-dev \
+#     libxrandr-dev \
+#     libxtst-dev \
+#     freetype-dev \
+#     libfontenc-dev \
+#     zlib-dev \
+#     libx11-static \
+#     libxcb-static \
+#     zlib-static \
+#     pixman-static \
+#     libjpeg-turbo-static \
+#     freetype-static \
+#     libpng-static \
+#     bzip2-static \
+#     brotli-static \
+#     libunistring-static \
+#     nettle-static \
+#     gettext-static \
+#     libunistring-dev \
+#     libbsd-dev \
 
 #
 # Build GNU TLS.

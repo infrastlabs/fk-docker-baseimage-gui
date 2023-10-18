@@ -125,6 +125,7 @@ function log {
 # The static library is not provided by Alpine repository, so we need to build
 # it ourself.
 #
+function gnutls(){
 mkdir -p /tmp/gnutls
 log "Downloading GNU TLS..."
 down_catfile ${GNUTLS_URL} | tar -xJ --strip 1 -C /tmp/gnutls
@@ -149,12 +150,15 @@ log "Compiling GNU TLS..."
 make -C /tmp/gnutls -j$(nproc)
 log "Installing GNU TLS..."
 make DESTDIR=$(xx-info sysroot) -C /tmp/gnutls install
+echo "finished."
+}
 
 #
 # Build libXfont2
 # The static library is not provided by Alpine repository, so we need to build
 # it ourself.
 #
+function libxfont2(){
 mkdir -p /tmp/libxfont2
 log "Downloading libXfont2..."
 down_catfile ${LIBXFONT2_URL} | tar -xz --strip 1 -C /tmp/libxfont2
@@ -175,12 +179,15 @@ sed 's/^noinst_PROGRAMS = /#noinst_PROGRAMS = /' -i /tmp/libxfont2/Makefile.in
 make -C /tmp/libxfont2 -j$(nproc)
 log "Installing libXfont2..."
 make DESTDIR=$(xx-info sysroot) -C /tmp/libxfont2 install
+echo "finished."
+}
 
 #
 # Build libfontenc
 # The static library is not provided by Alpine repository, so we need to build
 # it ourself.
 #
+function libfontenc(){
 mkdir -p /tmp/libfontenc
 log "Downloading libfontenc..."
 down_catfile ${LIBFONTENC_URL} | tar -xz --strip 1 -C /tmp/libfontenc
@@ -198,12 +205,15 @@ log "Compiling libfontenc..."
 make -C /tmp/libfontenc -j$(nproc)
 log "Installing libfontenc..."
 make DESTDIR=$(xx-info sysroot) -C /tmp/libfontenc install
+echo "finished."
+}
 
 #
 # Build libtasn1
 # The static library is not provided by Alpine repository, so we need to build
 # it ourself.
 #
+function libtasn1(){
 mkdir -p /tmp/libtasn1
 log "Downloading libtasn1..."
 down_catfile ${LIBTASN1_URL} | tar -xz --strip 1 -C /tmp/libtasn1
@@ -220,12 +230,15 @@ log "Compiling libtasn1..."
 make -C /tmp/libtasn1 -j$(nproc)
 log "Installing libtasn1..."
 make DESTDIR=$(xx-info sysroot) -C /tmp/libtasn1 install
+echo "finished."
+}
 
 #
 # Build libxshmfence
 # The static library is not provided by Alpine repository, so we need to build
 # it ourself.
 #
+function libxshmfence(){
 mkdir -p /tmp/libxshmfence
 log "Downloading libxshmfence..."
 down_catfile ${LIBXSHMFENCE_URL} | tar -xz --strip 1 -C /tmp/libxshmfence
@@ -243,10 +256,13 @@ log "Compiling libxshmfence..."
 make -C /tmp/libxshmfence -j$(nproc)
 log "Installing libxshmfence..."
 make DESTDIR=$(xx-info sysroot) -C /tmp/libxshmfence install
+echo "finished."
+}
 
 #
 # Build TigerVNC
 #
+function tigervnc(){
 mkdir -p /tmp/tigervnc
 log "Downloading TigerVNC..."
 down_catfile ${TIGERVNC_URL} | tar -xz --strip 1 -C /tmp/tigervnc
@@ -352,10 +368,13 @@ make DESTDIR=/tmp/tigervnc-install -C /tmp/tigervnc/unix/xserver install
 
 log "Installing TigerVNC vncpasswd tool..."
 make DESTDIR=/tmp/tigervnc-install -C /tmp/tigervnc/unix/vncpasswd install
+echo "finished."
+}
 
 #
 # Build XKeyboardConfig.
 #
+function xkb(){
 mkdir -p /tmp/xkb
 log "Downloading XKeyboardConfig..."
 down_catfile ${XKEYBOARDCONFIG_URL} | tar -xj --strip 1 -C /tmp/xkb
@@ -404,10 +423,13 @@ TO_KEEP="
 "
 find /tmp/xkb-install/usr/share/X11/xkb -mindepth 2 -maxdepth 2 -type d -print -exec rm -r {} ';'
 find /tmp/xkb-install/usr/share/X11/xkb -mindepth 1 ! -type d $(printf "! -wholename /tmp/xkb-install/usr/share/X11/xkb/%s " $(echo "$TO_KEEP")) -print -delete
+echo "finished."
+}
 
 #
 # Build xkbcomp.
 #
+function xkbcomp(){
 mkdir -p /tmp/xkbcomp
 log "Downloading xkbcomp..."
 down_catfile ${XKBCOMP_URL} | tar -xj --strip 1 -C /tmp/xkbcomp
@@ -427,4 +449,22 @@ make -C /tmp/xkbcomp -j$(nproc)
 
 log "Installing xkbcomp..."
 make DESTDIR=/tmp/xkbcomp-install -C /tmp/xkbcomp install
+echo "finished."
+}
 
+case "$1" in
+full)
+    gnutls
+    libxfont2
+    libfontenc
+    libtasn1
+    libxshmfence
+    tigervnc
+    # 
+    xkb
+    xkbcomp
+    ;;
+*) #compile
+    $1
+    ;;          
+esac

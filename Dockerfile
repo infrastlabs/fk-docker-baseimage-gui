@@ -6,69 +6,77 @@
 #
 
 # ARG BASEIMAGE=unknown
-ARG BASEIMAGE=alpine:3.15
+# ARG BASEIMAGE=alpine:3.15
 
 # Define the Alpine packages to be installed into the image.
-ARG ALPINE_PKGS="\
-    # Needed to generate self-signed certificates
-    openssl \
-    # Needed to use netcat with unix socket.
-    netcat-openbsd \
-"
+# ARG ALPINE_PKGS="\
+#     # Needed to generate self-signed certificates
+#     openssl \
+#     # Needed to use netcat with unix socket.
+#     netcat-openbsd \
+# "
 
 # Define the Debian/Ubuntu packages to be installed into the image.
-ARG DEBIAN_PKGS="\
-    # Used to determine if nginx is ready.
-    netcat \
-    # For ifconfig
-    net-tools \
-    # Needed to generate self-signed certificates
-    openssl \
-"
+# ARG DEBIAN_PKGS="\
+#     # Used to determine if nginx is ready.
+#     netcat \
+#     # For ifconfig
+#     net-tools \
+#     # Needed to generate self-signed certificates
+#     openssl \
+# "
 
 # Build TigerVNC server.
-FROM infrastlabs/x11-base:builder AS cache1
-# build.sh: split multi steps, to speed up
-COPY src/tigervnc/build.sh /build/build.sh
-RUN sh /build/build.sh cache
-# 
+# FROM infrastlabs/x11-base:builder AS cache1
+#   # build.sh: split multi steps, to speed up
+#   COPY src/tigervnc/build.sh /build/build.sh
+#   RUN sh /build/build.sh cache
+
 # --platform=$BUILDPLATFORM 
 FROM infrastlabs/x11-base:builder AS tigervnc
 ARG TARGETPLATFORM
 # COPY --from=xx / /
-COPY src/tigervnc /build
-ENV targetDir=/usr
-COPY --from=cache1 /mnt /mnt
-RUN sh /build/build.sh gnutls
-RUN sh /build/build.sh libxfont2
-RUN sh /build/build.sh libfontenc
-RUN /build/build.sh libtasn1
-RUN /build/build.sh libxshmfence
-RUN /build/build.sh tigervnc
-# # 
-# RUN /build/build.sh xkb
-# RUN /build/build.sh xkbcomp
+# COPY --from=upx /usr/bin/upx /usr/bin/upx
+RUN apk update; apk add gawk;
+ENV TARGETPATH=/usr
+# COPY --from=cache1 /mnt /mnt
+# https://blog.csdn.net/sodaloveer/article/details/127727729 #batch_exec
+COPY src/tigervnc/build.sh /build/build.sh
+RUN sh /build/build.sh cache
+RUN sh /build/build.sh b_deps
 # 
-# RUN xx-verify --static /tmp/tigervnc-install/usr/bin/Xvnc
-# RUN xx-verify --static /tmp/tigervnc-install/usr/bin/vncpasswd
-# # COPY --from=upx /usr/bin/upx /usr/bin/upx
-# RUN upx /tmp/tigervnc-install/usr/bin/Xvnc
-# RUN upx /tmp/tigervnc-install/usr/bin/vncpasswd
+COPY src/tigervnc /build
+RUN sh /build/build.sh b_tiger
+# RUN apk --no-cache add bash; bash -c """sh /build/build.sh gnutls & ; \
+#     sh /build/build.sh libxfont2 & ; \
+#     sh /build/build.sh libfontenc & ; \
+#     sh /build/build.sh libtasn1 & ; \
+#     sh /build/build.sh libxshmfence & ; \
+#     wait ; \
+#     sh /build/build.sh tigervnc & ; \
+#     sh /build/build.sh xkb & ; \
+#     sh /build/build.sh xkbcomp & ; \
+#     wait ;"""
+# 
+RUN xx-verify --static /tmp/tigervnc-install/usr/bin/Xvnc; \
+  xx-verify --static /tmp/tigervnc-install/usr/bin/vncpasswd
+RUN upx /tmp/tigervnc-install/usr/bin/Xvnc; \
+  upx /tmp/tigervnc-install/usr/bin/vncpasswd
 
 # Build xdpyprobe.
 # Used to determine if the X server (Xvnc) is ready.
-FROM infrastlabs/x11-base:builder AS xdpyprobe
-ARG TARGETPLATFORM
+# FROM infrastlabs/x11-base:builder AS xdpyprobe
+# ARG TARGETPLATFORM
 # COPY --from=xx / /
+# COPY --from=upx /usr/bin/upx /usr/bin/upx
 COPY src/xdpyprobe /tmp/xdpyprobe
 # RUN apk --no-cache add make clang
 # RUN xx-apk --no-cache add gcc musl-dev libx11-dev libx11-static libxcb-static
 # 
 RUN CC=xx-clang \
     make -C /tmp/xdpyprobe
-RUN xx-verify --static /tmp/xdpyprobe/xdpyprobe
-# COPY --from=upx /usr/bin/upx /usr/bin/upx
-RUN upx /tmp/xdpyprobe/xdpyprobe
+RUN xx-verify --static /tmp/xdpyprobe/xdpyprobe; \
+  upx /tmp/xdpyprobe/xdpyprobe
 
 # Build Fontconfig.
 # FROM infrastlabs/x11-base:builder AS fontconfig
@@ -101,6 +109,27 @@ RUN upx /tmp/xdpyprobe/xdpyprobe
 # RUN xx-verify --static /tmp/yad-install/usr/bin/yad
 # # COPY --from=upx /usr/bin/upx /usr/bin/upx
 # RUN upx /tmp/yad-install/usr/bin/yad
+
+
+
+# COPY --link --from=tigervnc /tmp/tigervnc-install/usr/bin/Xvnc /rootfs/usr/bin/
+# COPY --link --from=tigervnc /tmp/tigervnc-install/usr/bin/vncpasswd /rootfs/usr/bin/
+# COPY --link --from=tigervnc /tmp/xkb-install/usr/share/X11/xkb /rootfs/usr/share/X11/xkb
+# COPY --link --from=tigervnc /tmp/xkbcomp-install/usr/bin/xkbcomp /rootfs/usr/bin/
+# COPY --link --from=xdpyprobe /tmp/xdpyprobe/xdpyprobe /rootfs/usr/bin/
+
+RUN rm -rf /rootfs; mkdir -p /rootfs${TARGETPATH}/bin /rootfs${TARGETPATH}/share/X11; \
+  \cp -a /tmp/tigervnc-install/usr/bin/Xvnc /rootfs${TARGETPATH}/bin/; \
+  \cp -a /tmp/tigervnc-install/usr/bin/vncpasswd /rootfs${TARGETPATH}/bin/; \
+  \cp -a /tmp/xkb-install/usr/share/X11/xkb /rootfs${TARGETPATH}/share/X11/xkb; \
+  \cp -a /tmp/xkbcomp-install/usr/bin/xkbcomp /rootfs${TARGETPATH}/bin/; \
+  \cp -a /tmp/xdpyprobe/xdpyprobe /rootfs${TARGETPATH}/bin/; \
+  \cp -a /tmp/logs /rootfs/
+
+# validate
+RUN du -sh /rootfs; \
+  /rootfs/usr/bin/Xvnc -version; \
+  find /rootfs -type f |sort
 
 # Build Nginx.
 # FROM infrastlabs/x11-base:builder AS nginx
@@ -189,14 +218,14 @@ RUN upx /tmp/xdpyprobe/xdpyprobe
 #         > /dev/null 2>&1
 
 # Pull base image.
-FROM ${BASEIMAGE}
+# FROM ${BASEIMAGE}
 
 # Define working directory.
-WORKDIR /tmp
+# WORKDIR /tmp
 
 # Install system packages.
-ARG ALPINE_PKGS
-ARG DEBIAN_PKGS
+# ARG ALPINE_PKGS
+# ARG DEBIAN_PKGS
 # RUN \
 #     if [ -n "$(which apk)" ]; then \
 #         add-pkg ${ALPINE_PKGS}; \
@@ -207,10 +236,10 @@ ARG DEBIAN_PKGS
 #     rm -rf /var/cache/fontconfig/*
 
 # Add files.
-# COPY --link helpers/* /rootfs/usr/bin/
-# COPY --link rootfs/ /
-COPY --link --from=tigervnc /tmp/tigervnc-install/usr/bin/Xvnc /rootfs/usr/bin/
-COPY --link --from=tigervnc /tmp/tigervnc-install/usr/bin/vncpasswd /rootfs/usr/bin/
+# # COPY --link helpers/* /rootfs/usr/bin/
+# # COPY --link rootfs/ /
+# COPY --link --from=tigervnc /tmp/tigervnc-install/usr/bin/Xvnc /rootfs/usr/bin/
+# COPY --link --from=tigervnc /tmp/tigervnc-install/usr/bin/vncpasswd /rootfs/usr/bin/
 # COPY --link --from=tigervnc /tmp/xkb-install/usr/share/X11/xkb /rootfs/usr/share/X11/xkb
 # COPY --link --from=tigervnc /tmp/xkbcomp-install/usr/bin/xkbcomp /rootfs/usr/bin/
 # COPY --link --from=xdpyprobe /tmp/xdpyprobe/xdpyprobe /rootfs/usr/bin/
@@ -225,25 +254,25 @@ COPY --link --from=tigervnc /tmp/tigervnc-install/usr/bin/vncpasswd /rootfs/usr/
 # COPY --link --from=noVNC /opt/noVNC /opt/noVNC
 
 # Set environment variables.
-ENV \
-    DISPLAY_WIDTH=1920 \
-    DISPLAY_HEIGHT=1080 \
-    DARK_MODE=0 \
-    SECURE_CONNECTION=0 \
-    SECURE_CONNECTION_VNC_METHOD=SSL \
-    SECURE_CONNECTION_CERTS_CHECK_INTERVAL=60 \
-    WEB_LISTENING_PORT=5800 \
-    VNC_LISTENING_PORT=5900 \
-    VNC_PASSWORD= \
-    ENABLE_CJK_FONT=0
+# ENV \
+#     DISPLAY_WIDTH=1920 \
+#     DISPLAY_HEIGHT=1080 \
+#     DARK_MODE=0 \
+#     SECURE_CONNECTION=0 \
+#     SECURE_CONNECTION_VNC_METHOD=SSL \
+#     SECURE_CONNECTION_CERTS_CHECK_INTERVAL=60 \
+#     WEB_LISTENING_PORT=5800 \
+#     VNC_LISTENING_PORT=5900 \
+#     VNC_PASSWORD= \
+#     ENABLE_CJK_FONT=0
 
 # Expose ports.
 #   - 5800: VNC web interface
 #   - 5900: VNC
-EXPOSE 5800 5900
+# EXPOSE 5800 5900
 
 # Metadata.
-ARG IMAGE_VERSION=unknown
+# ARG IMAGE_VERSION=unknown
 # LABEL \
 #       org.label-schema.name="baseimage-gui" \
 #       org.label-schema.description="A minimal docker baseimage to ease creation of X graphical application containers" \

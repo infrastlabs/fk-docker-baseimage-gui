@@ -42,8 +42,8 @@ jobs:
 
           # BUILD
           # echo core;
-            sh buildx.sh builder
-            # sh buildx.sh #compile
+            bash buildx.sh builder
+            bash buildx.sh #compile
 
   # post-build:
   #   name: Post-build

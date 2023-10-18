@@ -27,52 +27,58 @@ ARG DEBIAN_PKGS="\
 "
 
 # Build TigerVNC server.
-FROM --platform=$BUILDPLATFORM infrastlabs/x11-base:builder AS tigervnc
+FROM infrastlabs/x11-base:builder AS cache1
+# build.sh: split multi steps, to speed up
+COPY src/tigervnc/build.sh /build/build.sh
+RUN sh /build/build.sh cache
+# 
+# --platform=$BUILDPLATFORM 
+FROM infrastlabs/x11-base:builder AS tigervnc
 ARG TARGETPLATFORM
 # COPY --from=xx / /
 COPY src/tigervnc /build
 ENV targetDir=/usr
-# build.sh: split multi steps, to speed up
+COPY --from=cache1 /mnt /mnt
 RUN sh /build/build.sh gnutls
-# RUN /build/build.sh libxfont2
-# RUN /build/build.sh libfontenc
-# RUN /build/build.sh libtasn1
-# RUN /build/build.sh libxshmfence
-# RUN /build/build.sh tigervnc
+RUN sh /build/build.sh libxfont2
+RUN sh /build/build.sh libfontenc
+RUN /build/build.sh libtasn1
+RUN /build/build.sh libxshmfence
+RUN /build/build.sh tigervnc
 # # 
 # RUN /build/build.sh xkb
 # RUN /build/build.sh xkbcomp
 # 
-RUN xx-verify --static /tmp/tigervnc-install/usr/bin/Xvnc
-RUN xx-verify --static /tmp/tigervnc-install/usr/bin/vncpasswd
-# COPY --from=upx /usr/bin/upx /usr/bin/upx
-RUN upx /tmp/tigervnc-install/usr/bin/Xvnc
-RUN upx /tmp/tigervnc-install/usr/bin/vncpasswd
+# RUN xx-verify --static /tmp/tigervnc-install/usr/bin/Xvnc
+# RUN xx-verify --static /tmp/tigervnc-install/usr/bin/vncpasswd
+# # COPY --from=upx /usr/bin/upx /usr/bin/upx
+# RUN upx /tmp/tigervnc-install/usr/bin/Xvnc
+# RUN upx /tmp/tigervnc-install/usr/bin/vncpasswd
 
 # Build xdpyprobe.
 # Used to determine if the X server (Xvnc) is ready.
-FROM --platform=$BUILDPLATFORM infrastlabs/x11-base:builder AS xdpyprobe
+FROM infrastlabs/x11-base:builder AS xdpyprobe
 ARG TARGETPLATFORM
 # COPY --from=xx / /
 COPY src/xdpyprobe /tmp/xdpyprobe
 # RUN apk --no-cache add make clang
 # RUN xx-apk --no-cache add gcc musl-dev libx11-dev libx11-static libxcb-static
 # 
-# RUN CC=xx-clang \
-#     make -C /tmp/xdpyprobe
-# RUN xx-verify --static /tmp/xdpyprobe/xdpyprobe
-# # COPY --from=upx /usr/bin/upx /usr/bin/upx
-# RUN upx /tmp/xdpyprobe/xdpyprobe
+RUN CC=xx-clang \
+    make -C /tmp/xdpyprobe
+RUN xx-verify --static /tmp/xdpyprobe/xdpyprobe
+# COPY --from=upx /usr/bin/upx /usr/bin/upx
+RUN upx /tmp/xdpyprobe/xdpyprobe
 
 # Build Fontconfig.
-# FROM --platform=$BUILDPLATFORM infrastlabs/x11-base:builder AS fontconfig
+# FROM infrastlabs/x11-base:builder AS fontconfig
 # ARG TARGETPLATFORM
 # # COPY --from=xx / /
 # COPY src/fontconfig/build.sh /tmp/build-fontconfig.sh
 # RUN /tmp/build-fontconfig.sh
 
 # Build Openbox.
-# FROM --platform=$BUILDPLATFORM infrastlabs/x11-base:builder AS openbox
+# FROM infrastlabs/x11-base:builder AS openbox
 # ARG TARGETPLATFORM
 # # COPY --from=xx / /
 # COPY --from=fontconfig /tmp/fontconfig-install /tmp/fontconfig-install
@@ -86,7 +92,7 @@ COPY src/xdpyprobe /tmp/xdpyprobe
 # RUN upx /tmp/openbox-install/usr/bin/obxprop
 
 # Build yad.
-# FROM --platform=$BUILDPLATFORM infrastlabs/x11-base:builder AS yad
+# FROM infrastlabs/x11-base:builder AS yad
 # ARG TARGETPLATFORM
 # # COPY --from=xx / /
 # COPY --from=fontconfig /tmp/fontconfig-install /tmp/fontconfig-install
@@ -97,7 +103,7 @@ COPY src/xdpyprobe /tmp/xdpyprobe
 # RUN upx /tmp/yad-install/usr/bin/yad
 
 # Build Nginx.
-# FROM --platform=$BUILDPLATFORM infrastlabs/x11-base:builder AS nginx
+# FROM infrastlabs/x11-base:builder AS nginx
 # ARG TARGETPLATFORM
 # # COPY --from=xx / /
 # COPY src/nginx/build.sh /tmp/build-nginx.sh
@@ -110,7 +116,7 @@ COPY src/xdpyprobe /tmp/xdpyprobe
 # RUN apk --no-cache add libcap && setcap cap_net_bind_service=ep /tmp/nginx-install/sbin/nginx
 
 # Build noVNC.
-# FROM --platform=$BUILDPLATFORM infrastlabs/x11-base:builder AS noVNC
+# FROM infrastlabs/x11-base:builder AS noVNC
 # ARG NOVNC_VERSION=1.4.0
 # ARG BOOTSTRAP_VERSION=5.1.3
 # ARG BOOTSTRAP_NIGHTSHADE_VERSION=1.1.3
@@ -174,7 +180,7 @@ COPY src/xdpyprobe /tmp/xdpyprobe
 #     install_app_icon.sh --no-tools-install "$APP_ICON_URL"
 
 # Generate default DH params.
-# FROM --platform=$BUILDPLATFORM infrastlabs/x11-base:builder AS dhparam
+# FROM infrastlabs/x11-base:builder AS dhparam
 # RUN apk --no-cache add openssl
 # RUN echo "Generating default DH parameters (2048 bits)..."
 # RUN openssl dhparam \
@@ -205,8 +211,8 @@ ARG DEBIAN_PKGS
 # COPY --link rootfs/ /
 COPY --link --from=tigervnc /tmp/tigervnc-install/usr/bin/Xvnc /rootfs/usr/bin/
 COPY --link --from=tigervnc /tmp/tigervnc-install/usr/bin/vncpasswd /rootfs/usr/bin/
-COPY --link --from=tigervnc /tmp/xkb-install/usr/share/X11/xkb /rootfs/usr/share/X11/xkb
-COPY --link --from=tigervnc /tmp/xkbcomp-install/usr/bin/xkbcomp /rootfs/usr/bin/
+# COPY --link --from=tigervnc /tmp/xkb-install/usr/share/X11/xkb /rootfs/usr/share/X11/xkb
+# COPY --link --from=tigervnc /tmp/xkbcomp-install/usr/bin/xkbcomp /rootfs/usr/bin/
 # COPY --link --from=xdpyprobe /tmp/xdpyprobe/xdpyprobe /rootfs/usr/bin/
 # 
 # COPY --link --from=fontconfig /tmp/fontconfig-install/opt /opt

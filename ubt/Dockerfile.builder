@@ -8,7 +8,7 @@ FROM tonistiigi/xx AS xx
 #   echo "http://$domain/alpine/v3.15/main" > /etc/apk/repositories; \
 #   echo "http://$domain/alpine/v3.15/community" >> /etc/apk/repositories
 # #RUN ping -c 2 qq.com; apt update;
-# RUN apt update; apt.sh build-base curl make cmake git;
+# RUN apt.sh build-base curl make cmake git;
 # RUN mkdir /tmp/upx && \
 #     curl -# -L https://ghproxy.com/https://github.com/upx/upx/releases/download/v4.0.1/upx-4.0.1-src.tar.xz | tar xJ --strip 1 -C /tmp/upx && \
 #     make -C /tmp/upx build/release-gcc -j$(nproc) && \
@@ -31,13 +31,31 @@ RUN export DOMAIN="mirrors.ustc.edu.cn"; \
   echo "deb http://${DOMAIN}/$target focal main restricted universe multiverse" > /etc/apt/sources.list \
   && echo "deb http://${DOMAIN}/$target focal-updates main restricted universe multiverse">> /etc/apt/sources.list; \
   \
-  echo 'apt update -qq && apt install -yq --no-install-recommends $@ && apt clean && rm -rf /var/lib/apt/lists/*; ' > /usr/local/bin/apt.sh \
+  # --no-install-recommends 
+  echo 'apt update -qq && apt install -yq $@ && apt clean && rm -rf /var/lib/apt/lists/*; ' > /usr/local/bin/apt.sh \
     && chmod +x /usr/local/bin/apt.sh
 #
 COPY --from=xx / /
 # COPY --from=upx /usr/bin/upx /usr/bin/upx
 
-RUN apt update; apt.sh make clang upx
+# BASE
+RUN apt.sh \
+  htop rsync tree tmux lrzsz wget psmisc openssl net-tools \
+  curl sudo iputils-ping procps iproute2 iptables ca-certificates \
+  zip unzip xz-utils
+# BUILD_common 81M
+    RUN apt.sh \
+      git autoconf libtool pkg-config gcc g++ make \
+      autoconf m4 intltool build-essential dpkg-dev \
+      build-essential check
+# BUILD_tiger ##########
+    # INSTALL dev, dep and sources
+    RUN apt update; \
+      # 25.6M
+      apt install -y --no-install-recommends ca-certificates fakeroot devscripts devscripts binutils wget;
+
+RUN apt.sh make clang upx
+# xx-apt
 #  libx11-static libxcb-static
 RUN apt.sh gcc musl-dev libx11-dev
 
@@ -58,6 +76,7 @@ RUN apt.sh \
     # font-util-dev \
     # xtrans 
 # ping -c 2 qq.com
+# xx-apt
 RUN apt.sh \
     g++ \
     # xcb-util-dev \
@@ -95,6 +114,7 @@ RUN apt.sh \
 
 ###XDPY
 #  libx11-static libxcb-static
+# xx-apt
 RUN apt.sh gcc musl-dev libx11-dev
 
 
@@ -108,6 +128,7 @@ RUN apt.sh \
     # build-base \
     # pkgconfig \
     # font-croscore 
+# xx-apt
 RUN apt.sh \
     g++ 
     # glib-dev \

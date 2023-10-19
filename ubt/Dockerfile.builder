@@ -8,8 +8,8 @@ FROM alpine:3.15 AS upx
 RUN export domain="mirrors.ustc.edu.cn"; \
   echo "http://$domain/alpine/v3.15/main" > /etc/apk/repositories; \
   echo "http://$domain/alpine/v3.15/community" >> /etc/apk/repositories
-#RUN ping -c 2 qq.com; apk update;
-RUN apk update; apk --no-cache add build-base curl make cmake git;
+#RUN ping -c 2 qq.com; apt update;
+RUN apt update; apt.sh build-base curl make cmake git;
 RUN mkdir /tmp/upx && \
     curl -# -L https://ghproxy.com/https://github.com/upx/upx/releases/download/v4.0.1/upx-4.0.1-src.tar.xz | tar xJ --strip 1 -C /tmp/upx && \
     make -C /tmp/upx build/release-gcc -j$(nproc) && \
@@ -28,79 +28,80 @@ RUN export domain="mirrors.ustc.edu.cn"; \
 #
 COPY --from=xx / /
 COPY --from=upx /usr/bin/upx /usr/bin/upx
-RUN apk update; apk --no-cache add make clang
-RUN xx-apk --no-cache add gcc musl-dev libx11-dev libx11-static libxcb-static
+RUN apt update; apt.sh make clang
+#  libx11-static libxcb-static
+RUN apt.sh gcc musl-dev libx11-dev
 
 ###TIGERVNC
 # log "Installing required Alpine packages..."
 # ping -c 2 qq.com
-RUN apk --no-cache add \
+RUN apt.sh \
     curl \
-    build-base \
     clang \
     cmake \
     autoconf \
     automake \
     libtool \
     pkgconf \
-    meson \
-    util-macros \
-    font-util-dev \
-    xtrans 
+    meson
+    # build-base \
+    # util-macros \
+    # font-util-dev \
+    # xtrans 
 # ping -c 2 qq.com
-RUN xx-apk --no-cache --no-scripts add \
+RUN apt.sh \
     g++ \
-    xcb-util-dev \
-    pixman-dev \
+    # xcb-util-dev \
+    # pixman-dev \
+    # libgcrypt-static \
+    # libgpg-error-static \
+    # libxfont2-dev \
+    # libjpeg-turbo-dev \
     libx11-dev \
     libgcrypt-dev \
-    libgcrypt-static \
-    libgpg-error-static \
     libxkbfile-dev \
-    libxfont2-dev \
-    libjpeg-turbo-dev \
     nettle-dev \
     libunistring-dev \
     gnutls-dev \
-    fltk-dev \
     libxrandr-dev \
     libxtst-dev \
-    freetype-dev \
     libfontenc-dev \
-    zlib-dev \
-    libx11-static \
-    libxcb-static \
-    zlib-static \
-    pixman-static \
-    libjpeg-turbo-static \
-    freetype-static \
-    libpng-static \
-    bzip2-static \
-    brotli-static \
-    libunistring-static \
-    nettle-static \
-    gettext-static \
+    # fltk-dev \
+    # freetype-dev \
+    # zlib-dev \
+    # libx11-static \
+    # libxcb-static \
+    # zlib-static \
+    # pixman-static \
+    # libjpeg-turbo-static \
+    # freetype-static \
+    # libpng-static \
+    # bzip2-static \
+    # brotli-static \
+    # libunistring-static \
+    # nettle-static \
+    # gettext-static \
     libunistring-dev \
     libbsd-dev 
 
-
 ###XDPY
-RUN xx-apk --no-cache add gcc musl-dev libx11-dev libx11-static libxcb-static
+#  libx11-static libxcb-static
+RUN apt.sh gcc musl-dev libx11-dev
 
 
 ###FONTCONFIG
 # log "Installing required Alpine packages..."
-RUN apk --no-cache add \
+RUN apt.sh \
     curl \
-    build-base \
     clang \
-    pkgconfig \
     gperf \
-    python3 \
-    font-croscore 
-RUN xx-apk --no-cache --no-scripts add \
-    glib-dev \
-    g++ \
-    freetype-dev \
-    expat-dev 
+    python3
+    # build-base \
+    # pkgconfig \
+    # font-croscore 
+RUN apt.sh \
+    g++ 
+    # glib-dev \
+    # freetype-dev \
+    # expat-dev 
 

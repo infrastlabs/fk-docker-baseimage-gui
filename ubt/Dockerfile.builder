@@ -1,34 +1,43 @@
 
-# Get Dockerfile cross-compilation helpers.
+# # Get Dockerfile cross-compilation helpers.
 # --platform=$BUILDPLATFORM 
 FROM tonistiigi/xx AS xx
+# # Build UPX.
+# FROM alpine:3.15 AS upx
+# RUN export domain="mirrors.ustc.edu.cn"; \
+#   echo "http://$domain/alpine/v3.15/main" > /etc/apk/repositories; \
+#   echo "http://$domain/alpine/v3.15/community" >> /etc/apk/repositories
+# #RUN ping -c 2 qq.com; apt update;
+# RUN apt update; apt.sh build-base curl make cmake git;
+# RUN mkdir /tmp/upx && \
+#     curl -# -L https://ghproxy.com/https://github.com/upx/upx/releases/download/v4.0.1/upx-4.0.1-src.tar.xz | tar xJ --strip 1 -C /tmp/upx && \
+#     make -C /tmp/upx build/release-gcc -j$(nproc) && \
+#     cp -v /tmp/upx/build/release-gcc/upx /usr/bin/upx
 
-# Build UPX.
-FROM alpine:3.15 AS upx
-RUN export domain="mirrors.ustc.edu.cn"; \
-  echo "http://$domain/alpine/v3.15/main" > /etc/apk/repositories; \
-  echo "http://$domain/alpine/v3.15/community" >> /etc/apk/repositories
-#RUN ping -c 2 qq.com; apt update;
-RUN apt update; apt.sh build-base curl make cmake git;
-RUN mkdir /tmp/upx && \
-    curl -# -L https://ghproxy.com/https://github.com/upx/upx/releases/download/v4.0.1/upx-4.0.1-src.tar.xz | tar xJ --strip 1 -C /tmp/upx && \
-    make -C /tmp/upx build/release-gcc -j$(nproc) && \
-    cp -v /tmp/upx/build/release-gcc/upx /usr/bin/upx
 
+# FROM alpine:3.15 AS builder
+# ARG TARGETPLATFORM
+# # https://www.jakehu.me/2021/alpine-mirrors/
+# RUN export domain="mirrors.ustc.edu.cn"; \
+#   echo "http://$domain/alpine/v3.15/main" > /etc/apk/repositories; \
+#   echo "http://$domain/alpine/v3.15/community" >> /etc/apk/repositories
 
-FROM alpine:3.15 AS builder
+FROM ubuntu:20.04 as stage-base
+ENV DEBIAN_FRONTEND noninteractive
 ARG TARGETPLATFORM
-# https://www.jakehu.me/2021/alpine-mirrors/
-# domain="mirrors.ustc.edu.cn"
-# domain="mirrors.aliyun.com";
-# mirrors.tuna.tsinghua.edu.cn
-RUN export domain="mirrors.ustc.edu.cn"; \
-  echo "http://$domain/alpine/v3.15/main" > /etc/apk/repositories; \
-  echo "http://$domain/alpine/v3.15/community" >> /etc/apk/repositories
+ARG BUILDPLATFORM
+RUN export DOMAIN="mirrors.ustc.edu.cn"; \
+  test -z "$(echo $TARGETPLATFORM |grep arm)" && target=ubuntu || target=ubuntu-ports; \
+  echo "deb http://${DOMAIN}/$target focal main restricted universe multiverse" > /etc/apt/sources.list \
+  && echo "deb http://${DOMAIN}/$target focal-updates main restricted universe multiverse">> /etc/apt/sources.list; \
+  \
+  echo 'apt update -qq && apt install -yq --no-install-recommends $@ && apt clean && rm -rf /var/lib/apt/lists/*; ' > /usr/local/bin/apt.sh \
+    && chmod +x /usr/local/bin/apt.sh
 #
 COPY --from=xx / /
-COPY --from=upx /usr/bin/upx /usr/bin/upx
-RUN apt update; apt.sh make clang
+# COPY --from=upx /usr/bin/upx /usr/bin/upx
+
+RUN apt update; apt.sh make clang upx
 #  libx11-static libxcb-static
 RUN apt.sh gcc musl-dev libx11-dev
 

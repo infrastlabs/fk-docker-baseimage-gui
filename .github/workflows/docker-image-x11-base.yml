@@ -42,8 +42,11 @@ jobs:
 
           # BUILD
           # echo core;
-            bash buildx.sh builder
-            bash buildx.sh #compile
+            bash buildx.sh ubt-builder
+            # 
+            # bash buildx.sh builder
+            # bash buildx.sh #compile
+            # bash buildx.sh flux
 
   # post-build:
   #   name: Post-build

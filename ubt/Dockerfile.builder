@@ -140,25 +140,38 @@ ENV TARGETPATH=/usr
 # COPY --from=cache1 /mnt /mnt
 # https://blog.csdn.net/sodaloveer/article/details/127727729 #batch_exec
 COPY src/tigervnc/build.sh /build/build.sh
-RUN sh /build/build.sh cache
-RUN sh /build/build.sh b_deps
+RUN bash /build/build.sh cache
+RUN rm -f /bin/sh && ln -s /bin/bash /bin/sh;
+RUN bash /build/build.sh b_deps
 # 
+RUN export DOMAIN="mirrors.ustc.edu.cn"; \
+      test -z "$(echo $TARGETPLATFORM |grep arm)" && target=ubuntu || target=ubuntu-ports; \
+      echo "deb-src http://$DOMAIN/$target focal main restricted universe multiverse" >> /etc/apt/sources.list; \
+      echo "deb-src http://$DOMAIN/$target focal-updates main restricted universe multiverse">> /etc/apt/sources.list; \
+      cat /etc/apt/sources.list;
+# +DEPS
+# pixman-1 libavcodec libavutil libswscale
+# libxfont2-dev >> libxfont2 >> libxfont-dev
+RUN apt.sh \
+  libpixman-1-dev libavcodec-dev libavutil-dev libswscale-dev \
+  libjpeg-dev libxfont-dev
+
 COPY src/tigervnc /build
-RUN sh /build/build.sh b_tiger
-RUN xx-verify --static /tmp/tigervnc-install/usr/bin/Xvnc; \
-  xx-verify --static /tmp/tigervnc-install/usr/bin/vncpasswd
-RUN upx /tmp/tigervnc-install/usr/bin/Xvnc; \
-  upx /tmp/tigervnc-install/usr/bin/vncpasswd
+RUN bash /build/build.sh b_tiger
+# RUN xx-verify --static /tmp/tigervnc-install/usr/bin/Xvnc; \
+#   xx-verify --static /tmp/tigervnc-install/usr/bin/vncpasswd
+# RUN upx /tmp/tigervnc-install/usr/bin/Xvnc; \
+#   upx /tmp/tigervnc-install/usr/bin/vncpasswd
 
-RUN rm -rf /rootfs; mkdir -p /rootfs${TARGETPATH}/bin /rootfs${TARGETPATH}/share/X11; \
-  \cp -a /tmp/tigervnc-install/usr/bin/Xvnc /rootfs${TARGETPATH}/bin/; \
-  \cp -a /tmp/tigervnc-install/usr/bin/vncpasswd /rootfs${TARGETPATH}/bin/; \
-  \cp -a /tmp/xkb-install/usr/share/X11/xkb /rootfs${TARGETPATH}/share/X11/xkb; \
-  \cp -a /tmp/xkbcomp-install/usr/bin/xkbcomp /rootfs${TARGETPATH}/bin/; \
-  #\cp -a /tmp/xdpyprobe/xdpyprobe /rootfs${TARGETPATH}/bin/; \
-  \cp -a /tmp/logs /rootfs/
+# RUN rm -rf /rootfs; mkdir -p /rootfs${TARGETPATH}/bin /rootfs${TARGETPATH}/share/X11; \
+#   \cp -a /tmp/tigervnc-install/usr/bin/Xvnc /rootfs${TARGETPATH}/bin/; \
+#   \cp -a /tmp/tigervnc-install/usr/bin/vncpasswd /rootfs${TARGETPATH}/bin/; \
+#   \cp -a /tmp/xkb-install/usr/share/X11/xkb /rootfs${TARGETPATH}/share/X11/xkb; \
+#   \cp -a /tmp/xkbcomp-install/usr/bin/xkbcomp /rootfs${TARGETPATH}/bin/; \
+#   #\cp -a /tmp/xdpyprobe/xdpyprobe /rootfs${TARGETPATH}/bin/; \
+#   \cp -a /tmp/logs /rootfs/
 
-# validate
-RUN du -sh /rootfs; \
-  /rootfs/usr/bin/Xvnc -version; \
-  find /rootfs -type f |sort
+# # validate
+# RUN du -sh /rootfs; \
+#   /rootfs/usr/bin/Xvnc -version; \
+#   find /rootfs -type f |sort

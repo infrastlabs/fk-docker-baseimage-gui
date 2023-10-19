@@ -169,11 +169,12 @@ ENV TARGETPATH=/usr
 COPY src/tigervnc/build.sh /build/build.sh
 RUN bash /build/build.sh cache
 RUN rm -f /bin/sh && ln -s /bin/bash /bin/sh;
-RUN bash /build/build.sh b_deps
+# try avoid tiger's deps-err?
+# RUN bash /build/build.sh b_deps
 # brotli >> libbrotli-dev
-RUN apt.sh libbrotli-dev
+RUN apt.sh libbrotli-dev vim-tiny
 COPY src/tigervnc /build
-RUN bash /build/build.sh b_tiger
+# RUN bash /build/build.sh b_tiger
 # RUN xx-verify --static /tmp/tigervnc-install/usr/bin/Xvnc; \
 #   xx-verify --static /tmp/tigervnc-install/usr/bin/vncpasswd
 # RUN upx /tmp/tigervnc-install/usr/bin/Xvnc; \

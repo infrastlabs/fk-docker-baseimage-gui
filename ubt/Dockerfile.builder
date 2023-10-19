@@ -136,14 +136,7 @@ RUN apt.sh \
     # freetype-dev \
     # expat-dev 
 
-ENV TARGETPATH=/usr
-# COPY --from=cache1 /mnt /mnt
-# https://blog.csdn.net/sodaloveer/article/details/127727729 #batch_exec
-COPY src/tigervnc/build.sh /build/build.sh
-RUN bash /build/build.sh cache
-RUN rm -f /bin/sh && ln -s /bin/bash /bin/sh;
-RUN bash /build/build.sh b_deps
-# 
+
 RUN export DOMAIN="mirrors.ustc.edu.cn"; \
       test -z "$(echo $TARGETPLATFORM |grep arm)" && target=ubuntu || target=ubuntu-ports; \
       echo "deb-src http://$DOMAIN/$target focal main restricted universe multiverse" >> /etc/apt/sources.list; \
@@ -154,8 +147,31 @@ RUN export DOMAIN="mirrors.ustc.edu.cn"; \
 # libxfont2-dev >> libxfont2 >> libxfont-dev
 RUN apt.sh \
   libpixman-1-dev libavcodec-dev libavutil-dev libswscale-dev \
-  libjpeg-dev libxfont-dev
+  libjpeg-dev libxfont-dev xserver-xorg-dev \
+  libbz2-dev libmd-dev
+# /usr/bin/ld: cannot find -lbrotlidec
+# /usr/bin/ld: cannot find -lbrotlicommon
+# /usr/bin/ld: cannot find -lbz2
+# /usr/bin/ld: cannot find -lmd
+# BUILD_xrdp ##########
+    RUN apt.sh \
+      git autoconf libtool pkg-config gcc g++ make  libssl-dev libpam0g-dev \
+      libjpeg-dev libx11-dev libxfixes-dev libxrandr-dev  flex bison libxml2-dev \
+      intltool xsltproc xutils-dev python-libxml2 g++ xutils libfuse-dev \
+      libmp3lame-dev nasm libpixman-1-dev xserver-xorg-dev
+    RUN apt.sh \
+      libfdk-aac-dev libopus-dev
 
+
+ENV TARGETPATH=/usr
+# COPY --from=cache1 /mnt /mnt
+# https://blog.csdn.net/sodaloveer/article/details/127727729 #batch_exec
+COPY src/tigervnc/build.sh /build/build.sh
+RUN bash /build/build.sh cache
+RUN rm -f /bin/sh && ln -s /bin/bash /bin/sh;
+RUN bash /build/build.sh b_deps
+# brotli >> libbrotli-dev
+RUN apt.sh libbrotli-dev
 COPY src/tigervnc /build
 RUN bash /build/build.sh b_tiger
 # RUN xx-verify --static /tmp/tigervnc-install/usr/bin/Xvnc; \

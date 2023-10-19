@@ -16,13 +16,21 @@ set -e # Exit immediately if a command exits with a non-zero status.
 # Define software versions.
 TIGERVNC_VERSION=1.13.1
 XSERVER_VERSION=1.20.14
+# @ubt2004
+# TIGERVNC_VERSION=1.12.0
+# XSERVER_VERSION=1.20.7
 
 # Use the same versions has Alpine 3.15.
-GNUTLS_VERSION=3.7.1
-LIBXFONT2_VERSION=2.0.5
-LIBFONTENC_VERSION=1.1.4
-LIBTASN1_VERSION=4.18.0
-LIBXSHMFENCE_VERSION=1.3
+# 3.6.13-2ubuntu1.8
+GNUTLS_VERSION=3.6.13 #3.7.1
+# 1:2.0.3-1 ##dpkg -l |egrep "font"
+LIBXFONT2_VERSION=2.0.3 #2.0.5
+# 1:1.1.4-0ubuntu1
+LIBFONTENC_VERSION=1.1.4 #OK
+# 4.16.0-2
+LIBTASN1_VERSION=4.16.0 #4.18.0
+# 1.3-1
+LIBXSHMFENCE_VERSION=1.3 #OK
 
 # If the XKeyboardConfig version is too recent compared to xorgproto/libX11,
 # xkbcomp will complain with warnings like "Could not resolve keysym ...".  With
@@ -477,8 +485,8 @@ full)
     libfontenc
     libtasn1
     libxshmfence
-    tigervnc
     # 
+    tigervnc
     xkb
     xkbcomp
     ;;
@@ -501,13 +509,13 @@ b_tiger)
     ;;
 *) #compile
     # $1 |tee /tmp/logs/$1.log
-    
+    set +e
     echo -e "\n$1, start building.."
     begin_time="`gawk 'BEGIN{print systime()}'`"; export logfile=/tmp/logs/$1.log
-    $1 > $logfile 2>&1; print_time_cost $begin_time
+    $1 #> $logfile 2>&1;
     
     test "0" !=  "$?" && tail -200 $logfile || echo "err 0, pass"
-    echo "$1, finished."
+    print_time_cost $begin_time; echo "$1, finished."
     ;;          
 esac
 exit 0

@@ -40,8 +40,22 @@ builder)
     # --network=host: docker buildx create --use --name mybuilder2 --buildkitd-flags '--allow-insecure-entitlement network.host'
     docker buildx build $cache $plat --push -t $ns/$img -f src/../Dockerfile.builder . 
     ;;
-flux)
+ubt-builder)
     repo=registry-1.docker.io
+    img="x11-base:ubt-builder"
+    # cache
+    ali="registry.cn-shenzhen.aliyuncs.com"
+    cimg="x11-base-cache:ubt-builder"
+    cache="--cache-from type=registry,ref=$ali/$ns/$cimg --cache-to type=registry,ref=$ali/$ns/$cimg"
+    
+    plat="--platform linux/amd64,linux/arm64,linux/arm" #,linux/arm
+    plat="--platform linux/amd64"
+    # --network=host: docker buildx create --use --name mybuilder2 --buildkitd-flags '--allow-insecure-entitlement network.host'
+    docker buildx build $cache $plat --push -t $ns/$img -f src/../ubt/Dockerfile.builder . 
+    ;;
+flux)
+    # repo=registry-1.docker.io
+    repo=registry.cn-shenzhen.aliyuncs.com
     img="x11-base:fluxbox"
     # cache
     ali="registry.cn-shenzhen.aliyuncs.com"
@@ -49,9 +63,9 @@ flux)
     cache="--cache-from type=registry,ref=$ali/$ns/$cimg --cache-to type=registry,ref=$ali/$ns/$cimg"
     
     plat="--platform linux/amd64,linux/arm64,linux/arm" #,linux/arm
-    # plat="--platform linux/arm"
+    plat="--platform linux/amd64"
     cd flux
-    docker buildx build $cache $plat --push -t $ns/$img -f Dockerfile . 
+    docker buildx build $cache $plat --push -t $repo/$ns/$img -f src/Dockerfile . 
     ;;
 *) #compile
     # TigerVNC 1.12.0 |10 Nov 2021

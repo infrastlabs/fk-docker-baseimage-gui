@@ -22,7 +22,7 @@ FROM tonistiigi/xx AS xx
 #   echo "http://$domain/alpine/v3.15/main" > /etc/apk/repositories; \
 #   echo "http://$domain/alpine/v3.15/community" >> /etc/apk/repositories
 
-FROM ubuntu:20.04 as stage-base
+FROM debian:12-slim as stage-base
 ENV DEBIAN_FRONTEND noninteractive
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
@@ -57,11 +57,13 @@ RUN apt.sh \
       # 25.6M
       apt install -y --no-install-recommends ca-certificates fakeroot devscripts devscripts binutils wget;
 
+# deb12-out:  upx
 RUN apt.sh make clang \
-  upx gawk
+  gawk
 # xx-apt
 #  libx11-static libxcb-static
-RUN apt.sh gcc musl-dev libx11-dev
+# repeted
+# RUN apt.sh gcc musl-dev libx11-dev
 
 ###TIGERVNC
 # log "Installing required Alpine packages..."
@@ -119,7 +121,8 @@ RUN apt.sh \
 ###XDPY
 #  libx11-static libxcb-static
 # xx-apt
-RUN apt.sh gcc musl-dev libx11-dev
+# deb12:  musl-dev |(try2)Failed to fetch http://mirrors.ustc.edu.cn/debian/pool/main/m/musl/musl-dev_1.2.3-1_armhf.deb  500  Internal Server Error
+RUN apt.sh gcc libx11-dev
 
 
 ###FONTCONFIG
@@ -156,11 +159,12 @@ RUN apt.sh \
 # /usr/bin/ld: cannot find -lbrotlicommon
 # /usr/bin/ld: cannot find -lbz2
 # /usr/bin/ld: cannot find -lmd
+# deb12 python-libxml2 
 # BUILD_xrdp ##########
     RUN apt.sh \
       git autoconf libtool pkg-config gcc g++ make  libssl-dev libpam0g-dev \
       libjpeg-dev libx11-dev libxfixes-dev libxrandr-dev  flex bison libxml2-dev \
-      intltool xsltproc xutils-dev python-libxml2 g++ xutils libfuse-dev \
+      intltool xsltproc xutils-dev g++ xutils libfuse-dev \
       libmp3lame-dev nasm libpixman-1-dev xserver-xorg-dev
     RUN apt.sh \
       libfdk-aac-dev libopus-dev

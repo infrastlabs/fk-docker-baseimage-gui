@@ -20,15 +20,23 @@ XSERVER_VERSION=1.20.14
 # TIGERVNC_VERSION=1.12.0
 # XSERVER_VERSION=1.20.7
 
+
+# root@10155d90a9ce:/tmp/tigervnc/unix/xserver# dpkg -l |egrep "gnutls|xfont2|fontenc|tasn|shmf" |egrep "dev|shmf|xfont2"
+# ii  libfontenc-dev:amd64            1:1.1.4-1                      amd64        X11 font encoding library (development headers)
+# ii  libgnutls28-dev:amd64           3.7.9-2                        amd64        GNU TLS library - development files
+# ii  libtasn1-6-dev:amd64            4.19.0-2                       amd64        Manage ASN.1 structures (development)
+# ii  libxfont2:amd64                 1:2.0.6-1                      amd64        X11 font rasterisation library
+# ii  libxshmfence1:amd64             1.3-1                          amd64        X shared memory fences - shared library
+
 # Use the same versions has Alpine 3.15.
 # 3.6.13-2ubuntu1.8
-GNUTLS_VERSION=3.6.13 #3.7.1
+GNUTLS_VERSION=3.7.9 #3.6.13 #3.7.1
 # 1:2.0.3-1 ##dpkg -l |egrep "font"
-LIBXFONT2_VERSION=2.0.3 #2.0.5
+LIBXFONT2_VERSION=2.0.6 #2.0.3 #2.0.5
 # 1:1.1.4-0ubuntu1
 LIBFONTENC_VERSION=1.1.4 #OK
 # 4.16.0-2
-LIBTASN1_VERSION=4.16.0 #4.18.0
+LIBTASN1_VERSION=4.19.0 #4.16.0 #4.18.0
 # 1.3-1
 LIBXSHMFENCE_VERSION=1.3 #OK
 
@@ -40,7 +48,8 @@ XKEYBOARDCONFIG_VERSION=2.32
 XKBCOMP_VERSION=1.4.5
 
 # Define software download URLs.
-TIGERVNC_URL=https://ghproxy.com/https://github.com/TigerVNC/tigervnc/archive/v${TIGERVNC_VERSION}.tar.gz
+# https://ghproxy.com/ @23.10.21
+TIGERVNC_URL=https://github.com/TigerVNC/tigervnc/archive/v${TIGERVNC_VERSION}.tar.gz
 XSERVER_URL=https://www.x.org/releases/individual/xserver/xorg-server-${XSERVER_VERSION}.tar.gz
 
 GNUTLS_URL=https://www.gnupg.org/ftp/gcrypt/gnutls/v${GNUTLS_VERSION%.*}/gnutls-${GNUTLS_VERSION}.tar.xz
@@ -276,15 +285,19 @@ down_catfile ${XSERVER_URL} | tar -xz --strip 1 -C /tmp/tigervnc/unix/xserver
 log "Patching TigerVNC..."
 # Apply the TigerVNC patch against the X server.
 patch -p1 -d /tmp/tigervnc/unix/xserver < /tmp/tigervnc/unix/xserver120.patch
+
 # Build a static binary of vncpasswd.
 patch -p1 -d /tmp/tigervnc < "$SCRIPT_DIR"/vncpasswd-static.patch
 # Disable PAM support.
 patch -p1 -d /tmp/tigervnc < "$SCRIPT_DIR"/disable-pam.patch
 # Fix static build.
 patch -p1 -d /tmp/tigervnc < "$SCRIPT_DIR"/static-build.patch
+# patch -p1 -d /tmp/tigervnc < "$SCRIPT_DIR"/tigervnc-1.12.0-configuration_fixes-1.patch
 
 log "Configuring TigerVNC..."
 (
+    # https://github.com/TigerVNC/tigervnc/issues/998
+    # -DENABLE_GNUTLS=ON \
     cd /tmp/tigervnc && cmake -G "Unix Makefiles" \
         $(xx-clang --print-cmake-defines) \
         -DCMAKE_FIND_ROOT_PATH=$(xx-info sysroot) \
@@ -296,7 +309,7 @@ log "Configuring TigerVNC..."
         -DCMAKE_BUILD_TYPE=Release \
         -DINSTALL_SYSTEMD_UNITS=OFF \
         -DENABLE_NLS=OFF \
-        -DENABLE_GNUTLS=ON \
+        -DENABLE_GNUTLS=OFF \
         -DENABLE_NETTLE=ON \
         -DBUILD_VIEWER=OFF \
 )
@@ -363,6 +376,8 @@ autoreconf -fiv /tmp/tigervnc/unix/xserver
 # have the correct order.
 find /tmp/tigervnc -name "*.la" -exec sed 's/^dependency_libs/#dependency_libs/' -i {} ';'
 sed 's/^XSERVER_SYS_LIBS = .*/XSERVER_SYS_LIBS = -lXau -lXdmcp -lpixman-1 -ljpeg -lXfont2 -lfreetype -lfontenc -lpng16 -lbrotlidec -lbrotlicommon -lz -lbz2 -lgnutls -lhogweed -lgmp -lnettle -lunistring -ltasn1 -lbsd -lmd/' -i /tmp/tigervnc/unix/xserver/hw/vnc/Makefile
+# #  -lbrotlidec -lbrotlicommon
+# sed 's/^XSERVER_SYS_LIBS = .*/XSERVER_SYS_LIBS = -lXau -lXdmcp -lpixman-1 -ljpeg -lXfont2 -lfreetype -lfontenc -lpng16 -lz -lbz2 -lgnutls -lhogweed -lgmp -lnettle -lunistring -ltasn1 -lbsd -lmd/' -i /tmp/tigervnc/unix/xserver/hw/vnc/Makefile
 
 log "Compiling TigerVNC server..."
 make -C /tmp/tigervnc/unix/xserver -j$(nproc)
@@ -383,7 +398,8 @@ log "Downloading XKeyboardConfig..."
 down_catfile ${XKEYBOARDCONFIG_URL} | tar -xj --strip 1 -C /tmp/xkb
 log "Configuring XKeyboardConfig..."
 (
-    cd /tmp/xkb && abuild-meson . build
+    # cd /tmp/xkb && abuild-meson . build
+    cd /tmp/xkb && meson . build
 )
 log "Compiling XKeyboardConfig..."
 meson compile -C /tmp/xkb/build
@@ -494,7 +510,7 @@ cache)
     cache
     ;;
 b_deps)
-    /build/build.sh gnutls &
+    # /build/build.sh gnutls &
     /build/build.sh libxfont2 &
     /build/build.sh libfontenc &
     /build/build.sh libtasn1 &

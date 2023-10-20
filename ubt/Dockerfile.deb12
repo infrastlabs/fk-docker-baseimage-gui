@@ -27,9 +27,12 @@ ENV DEBIAN_FRONTEND noninteractive
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 RUN export DOMAIN="mirrors.ustc.edu.cn"; \
-  test -z "$(echo $TARGETPLATFORM |grep arm)" && target=ubuntu || target=ubuntu-ports; \
-  echo "deb http://${DOMAIN}/$target focal main restricted universe multiverse" > /etc/apt/sources.list \
-  && echo "deb http://${DOMAIN}/$target focal-updates main restricted universe multiverse">> /etc/apt/sources.list; \
+  rm -f /etc/apt/sources.list.d/debian.sources; \
+  test -z "$(echo $TARGETPLATFORM |grep arm)" && target=bookworm || target=bookworm-ports; \
+  echo "deb http://$DOMAIN/debian bookworm main contrib non-free" > /etc/apt/sources.list; \
+  echo "deb http://$DOMAIN/debian bookworm-updates main contrib non-free">> /etc/apt/sources.list; \
+  echo "deb http://$DOMAIN/debian bookworm-backports main non-free contrib">> /etc/apt/sources.list; \
+  echo "deb http://$DOMAIN/debian-security bookworm-security main non-free contrib">> /etc/apt/sources.list; \
   \
   # --no-install-recommends 
   echo 'apt update -qq && apt install -yq $@ && apt clean && rm -rf /var/lib/apt/lists/*; ' > /usr/local/bin/apt.sh \
@@ -138,10 +141,10 @@ RUN apt.sh \
 
 
 RUN export DOMAIN="mirrors.ustc.edu.cn"; \
-      test -z "$(echo $TARGETPLATFORM |grep arm)" && target=ubuntu || target=ubuntu-ports; \
-      echo "deb-src http://$DOMAIN/$target focal main restricted universe multiverse" >> /etc/apt/sources.list; \
-      echo "deb-src http://$DOMAIN/$target focal-updates main restricted universe multiverse">> /etc/apt/sources.list; \
-      cat /etc/apt/sources.list;
+  test -z "$(echo $TARGETPLATFORM |grep arm)" && target=ubuntu || target=ubuntu-ports; \
+  echo "deb-src http://$DOMAIN/debian bookworm main contrib non-free" >> /etc/apt/sources.list; \
+  echo "deb-src http://$DOMAIN/debian bookworm-updates main contrib non-free">> /etc/apt/sources.list; \
+  cat /etc/apt/sources.list;
 # +DEPS
 # pixman-1 libavcodec libavutil libswscale
 # libxfont2-dev >> libxfont2 >> libxfont-dev
@@ -192,3 +195,13 @@ COPY src/tigervnc /build
 # RUN du -sh /rootfs; \
 #   /rootfs/usr/bin/Xvnc -version; \
 #   find /rootfs -type f |sort
+
+# # deb12
+# RUN apt.sh \
+#   # --enable-xx ##还是需要libGL.so.1
+#   libjpeg62-turbo openssl \
+#   x11-xkb-utils xkb-data \
+#   \
+#   libgl1 libxau6 libxdmcp6 \
+#   libpixman-1-0 \
+#   libxfont2

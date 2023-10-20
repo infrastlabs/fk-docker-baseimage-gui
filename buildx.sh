@@ -12,12 +12,12 @@ echo "${DOCKER_REGISTRY_PW_dockerhub}" |docker login --username=${DOCKER_REGISTR
 function build_rootfs(){
     dockerfile=/tmp/Dockefile.rootfs
     cat > $dockerfile<<EOF
-FROM infrastlabs/x11-base:compile as compile
+FROM infrastlabs/x11-base:deb12-builder as compile
 FROM alpine:3.15
 COPY --link --from=compile /rootfs /rootfs
 EOF
     repo=registry-1.docker.io
-    img="x11-base:rootfs"
+    img="x11-base:deb12-rootfs"
     plat="--platform linux/amd64,linux/arm64,linux/arm" #,linux/arm
     args="--provenance=false"
     # --network=host: docker buildx create --use --name mybuilder2 --buildkitd-flags '--allow-insecure-entitlement network.host'
@@ -49,9 +49,23 @@ ubt-builder)
     cache="--cache-from type=registry,ref=$ali/$ns/$cimg --cache-to type=registry,ref=$ali/$ns/$cimg"
     
     plat="--platform linux/amd64,linux/arm64,linux/arm" #,linux/arm
-    plat="--platform linux/amd64"
+    # plat="--platform linux/amd64"
     # --network=host: docker buildx create --use --name mybuilder2 --buildkitd-flags '--allow-insecure-entitlement network.host'
     docker buildx build $cache $plat --push -t $ns/$img -f src/../ubt/Dockerfile.builder . 
+    ;;
+deb12-builder)
+    repo=registry-1.docker.io
+    img="x11-base:deb12-builder"
+    # cache
+    ali="registry.cn-shenzhen.aliyuncs.com"
+    cimg="x11-base-cache:deb12-builder"
+    cache="--cache-from type=registry,ref=$ali/$ns/$cimg --cache-to type=registry,ref=$ali/$ns/$cimg"
+    
+    plat="--platform linux/amd64,linux/arm64,linux/arm" #,linux/arm
+    # plat="--platform linux/amd64"
+    # --network=host: docker buildx create --use --name mybuilder2 --buildkitd-flags '--allow-insecure-entitlement network.host'
+    docker buildx build $cache $plat --push -t $ns/$img -f src/../ubt/Dockerfile.deb12 . 
+    test "0" == "$?" && build_rootfs || exit $err
     ;;
 flux)
     # repo=registry-1.docker.io

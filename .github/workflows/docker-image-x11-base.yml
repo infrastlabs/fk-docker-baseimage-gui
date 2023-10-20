@@ -42,7 +42,8 @@ jobs:
 
           # BUILD
           # echo core;
-            bash buildx.sh ubt-builder
+            # bash buildx.sh ubt-builder
+            bash buildx.sh deb12-builder
             # 
             # bash buildx.sh builder
             # bash buildx.sh #compile

@@ -644,7 +644,7 @@ ii  g++-9                                9.4.0-1ubuntu1~20.04.2            armhf
 
 ## deb12's compile
 
-- try-c1: linux/arm @deb12
+- **try-c1: linux/arm @deb12** (headless:deb12-compile)
 
 ```bash
 # root@VM-12-9-ubuntu:/opt/working/_ee/ubt-armv7/ubt-core# docker run -it --rm --platform=linux/arm -v $(pwd)/src/arm:/src/arm infrastlabs/docker-headless:deb12-compile
@@ -723,3 +723,273 @@ make -C /build/tigervnc-1.12.0/unix/xserver -j$(nproc)
 
 ```
 
+- **try-c2: deb12-clang-build** (x11-base:deb12-builder)
+
+VER: 1.22.14> 1.20.7
+
+1.20.7 ok|> 1.22.14(try_staitc)
+
+```bash
+# tiger/build.sh
+# TIGERVNC_VERSION=1.12.0
+# XSERVER_VERSION=1.20.7
+TIGERVNC_VERSION=1.13.1
+XSERVER_VERSION=1.20.14
+TIGERVNC_URL=https://ghproxy.com/https://github.com/TigerVNC/tigervnc/archive/v${TIGERVNC_VERSION}.tar.gz
+XSERVER_URL=https://www.x.org/releases/individual/xserver/xorg-server-${XSERVER_VERSION}.tar.gz
+
+# test -z "$TARGETPATH" && export TARGETPATH=/opt/base
+function down_catfile(){
+  url=$1
+  file=${url##*/}
+  #curl -# -L -f 
+  test -f /mnt/$file || curl -# -k -fSL $url > /mnt/$file
+  cat /mnt/$file
+}
+mkdir -p /tmp/tigervnc
+down_catfile ${TIGERVNC_URL} | tar -xz --strip 1 -C /tmp/tigervnc
+down_catfile ${XSERVER_URL} | tar -xz --strip 1 -C /tmp/tigervnc/unix/xserver
+
+log "Patching TigerVNC..."
+# Apply the TigerVNC patch against the X server.
+patch -p1 -d /tmp/tigervnc/unix/xserver < /tmp/tigervnc/unix/xserver120.patch
+
+SCRIPT_DIR=/build
+# Build a static binary of vncpasswd.
+patch -p1 -d /tmp/tigervnc < "$SCRIPT_DIR"/vncpasswd-static.patch
+# Disable PAM support.
+patch -p1 -d /tmp/tigervnc < "$SCRIPT_DIR"/disable-pam.patch
+# Fix static build.
+f1=/tmp/tigervnc/CMakeLists.txt
+test -s ${f1}_bk1 || cat $f1 > ${f1}_bk1
+patch -p1 -d /tmp/tigervnc < "$SCRIPT_DIR"/static-build.patch
+# patch -p1 -d /tmp/tigervnc < "$SCRIPT_DIR"/tigervnc-1.12.0-configuration_fixes-1.patch
+
+# root@VM-12-9-ubuntu:~# docker run -it --rm infrastlabs/x11-base:ubt-builder bash
+
+cd /tmp/tigervnc && cmake -G "Unix Makefiles" \
+    $(xx-clang --print-cmake-defines) \
+    -DCMAKE_FIND_ROOT_PATH=$(xx-info sysroot) \
+    -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
+    -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
+    -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY \
+    -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
+    \
+    -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release \
+    -DINSTALL_SYSTEMD_UNITS=OFF \
+    -DBUILD_VIEWER=OFF \
+    -DENABLE_NLS=OFF \
+    -DENABLE_GNUTLS=OFF \
+    -DENABLE_NETTLE=ON 
+   #  -DENABLE_GNUTLS=ON \
+   #  -DENABLE_NETTLE=ON  #librfb must ON
+# OK
+
+cd /tmp/tigervnc
+# log "Compiling TigerVNC common libraries and tools..."
+make -C /tmp/tigervnc/common -j$(nproc)
+make -C /tmp/tigervnc/unix/common -j$(nproc)
+make -C /tmp/tigervnc/unix/vncpasswd -j$(nproc)
+#OK
+
+# xserver
+# log "Configuring TigerVNC server..."
+autoreconf -fiv /tmp/tigervnc/unix/xserver
+cd /tmp/tigervnc/unix/xserver && CFLAGS="$CFLAGS -Wno-implicit-function-declaration" ./configure \
+    --build=$(TARGETPLATFORM= xx-clang --print-target-triple) \
+    --host=$(xx-clang --print-target-triple) \
+    --prefix=/usr \
+    --sysconfdir=/etc/X11 --localstatedir=/var \
+    --with-xkb-path=${TARGETPATH}/share/X11/xkb \
+    --with-xkb-output=/var/lib/xkb \
+    --with-xkb-bin-directory=${TARGETPATH}/bin \
+    --with-default-font-path=/usr/share/fonts/misc,/usr/share/fonts/100dpi:unscaled,/usr/share/fonts/75dpi:unscaled,/usr/share/fonts/TTF,/usr/share/fonts/Type1 \
+    \
+    --disable-docs \
+    --disable-unit-tests \
+    --without-dtrace \
+    \
+    --with-pic \
+    --disable-static \
+    --disable-shared \
+    \
+    --disable-listen-tcp --enable-listen-unix \
+    --disable-listen-local --disable-dpms \
+    \
+    --disable-systemd-logind \
+    --disable-config-hal \
+    --disable-config-udev \
+    --disable-xorg --disable-xvfb \
+    --disable-glx --disable-dmx --disable-libdrm \
+    --disable-dri --disable-dri2 --disable-dri3 \
+    --disable-present --disable-xinerama --disable-record \
+    --disable-xf86vidmode --disable-xnest \
+    --disable-xquartz \
+    --disable-xwayland --disable-xwayland-eglstream \
+    --disable-standalone-xpbproxy \
+    --disable-xwin --disable-glamor \
+    --disable-kdrive --disable-xephyr 
+# OK
+
+###Remove all automatic dependencies.
+find /tmp/tigervnc -name "*.la" |sort
+find /tmp/tigervnc -name "*.la" |while read one; do echo -n "${one##*/}| "; cat $one |grep "^dependency_libs"; done |grep -v "=' -l"
+find /tmp/tigervnc -name "*.la" -exec sed 's/^dependency_libs/#dependency_libs/' -i {} ';'
+
+
+mkfile=/tmp/tigervnc/unix/xserver/hw/vnc/Makefile
+test -s ${mkfile}_bk1 && echo skip_bk || cat $mkfile > ${mkfile}_bk1
+cat $mkfile  |grep XSERVER_SYS_LIBS
+# XSERVER_SYS_LIBS = -lpixman-1 -lXfont2 -lXau -lXdmcp    -lm -lbsd 
+# XSERVER_SYS_LIBS = -lpixman-1 -lXfont2 -lXau -lXdmcp    -lm -lbsd #1.20.14 same
+sed 's/^XSERVER_SYS_LIBS = .*/XSERVER_SYS_LIBS = -lXau -lXdmcp -lpixman-1 -ljpeg -lXfont2 -lfreetype -lfontenc -lpng16 -lbrotlidec -lbrotlicommon -lz -lbz2 -lgnutls -lhogweed -lgmp -lnettle -lunistring -ltasn1 -lbsd -lmd/' -i $mkfile
+# -lbrotlidec -lbrotlicommon 
+sed 's/^XSERVER_SYS_LIBS = .*/XSERVER_SYS_LIBS = -lXau -lXdmcp -lpixman-1 -ljpeg -lXfont2 -lfreetype -lfontenc -lpng16 -lz -lbz2 -lgnutls -lhogweed -lgmp -lnettle -lunistring -ltasn1 -lbsd -lmd/' -i $mkfile
+
+
+# log "Compiling TigerVNC server..."
+make -C /tmp/tigervnc/unix/xserver -j$(nproc)
+
+# log "Installing TigerVNC server..."
+# make DESTDIR=/tmp/tigervnc-install -C /tmp/tigervnc/unix/xserver install
+# make DESTDIR=/tmp/tigervnc-install -C /tmp/tigervnc/unix/vncpasswd install
+
+
+```
+
+- staticTry2@deb12
+
+```bash
+# 01
+make -C /tmp/tigervnc/unix/xserver -j$(nproc) #一堆..gnutls> 找不到func
+
+# 02
+bash /build/build.sh b_deps
+make -C /tmp/tigervnc/unix/xserver -j$(nproc) #一堆..gnutls> 找不到func(同样问题)
+
+# ..delay
+
+root@2a850dc0eca8:/# find /tmp -name "*.la" |sort
+/tmp/gnutls/gl/.libs/libgnu.la
+/tmp/gnutls/gl/libgnu.la
+/tmp/gnutls/lib/.libs/libgnutls.la
+/tmp/gnutls/lib/accelerated/.libs/libaccelerated.la
+/tmp/gnutls/lib/accelerated/libaccelerated.la
+/tmp/gnutls/lib/accelerated/x86/.libs/libx86.la
+/tmp/gnutls/lib/accelerated/x86/libx86.la
+/tmp/gnutls/lib/algorithms/.libs/libgnutls_alg.la
+/tmp/gnutls/lib/algorithms/libgnutls_alg.la
+/tmp/gnutls/lib/auth/.libs/libgnutls_auth.la
+/tmp/gnutls/lib/auth/libgnutls_auth.la
+/tmp/gnutls/lib/ext/.libs/libgnutls_ext.la
+/tmp/gnutls/lib/ext/libgnutls_ext.la
+/tmp/gnutls/lib/extras/.libs/libgnutls_extras.la
+/tmp/gnutls/lib/extras/libgnutls_extras.la
+/tmp/gnutls/lib/libgnutls.la
+/tmp/gnutls/lib/nettle/.libs/libcrypto.la
+/tmp/gnutls/lib/nettle/libcrypto.la
+/tmp/gnutls/lib/x509/.libs/libgnutls_x509.la
+/tmp/gnutls/lib/x509/libgnutls_x509.la
+/tmp/gnutls/src/gl/.libs/libgnu_gpl.la
+/tmp/gnutls/src/gl/libgnu_gpl.la
+/tmp/libfontenc/src/.libs/libfontenc.la
+/tmp/libfontenc/src/libfontenc.la
+/tmp/libtasn1/lib/.libs/libtasn1.la
+/tmp/libtasn1/lib/gl/.libs/libgnu.la
+/tmp/libtasn1/lib/gl/libgnu.la
+/tmp/libtasn1/lib/libtasn1.la
+/tmp/libtasn1/src/gl/.libs/libsgl.la
+/tmp/libtasn1/src/gl/libsgl.la
+/tmp/libxfont2/.libs/libXfont2.la
+/tmp/libxfont2/libXfont2.la
+/tmp/libxshmfence/src/.libs/libxshmfence.la
+/tmp/libxshmfence/src/libxshmfence.la
+
+
+# v1.13.1:
+# without static patch: build ok;
+# with patch: same gnutls-func-err; (ubt2004一样, static_src包不对??)
+
+
+# try031(static-build.patch):
+# /tmp/tigervnc; cmake ...
+    -DENABLE_GNUTLS=OFF \
+    -DENABLE_NETTLE=ON
+
+
+# 
+find /tmp/tigervnc -name "*.la" -exec sed 's/^dependency_libs/#dependency_libs/' -i {} ';'
+# root@8079dd943b72:/tmp/tigervnc/unix/xserver# make -C /tmp/tigervnc/unix/xserver -j$(nproc)
+make[2]: Entering directory '/tmp/tigervnc/unix/xserver/hw/vnc'
+  CXXLD    Xvnc
+/usr/bin/ld: ../../../../common/rdr/.libs/librdr.a(ZlibInStream.cxx.o): undefined reference to symbol 'inflateEnd'
+/usr/bin/ld: /lib/x86_64-linux-gnu/libz.so.1: error adding symbols: DSO missing from command line
+collect2: error: ld returned 1 exit status
+make[2]: *** [Makefile:852: Xvnc] Error 1
+make[2]: Leaving directory '/tmp/tigervnc/unix/xserver/hw/vnc'
+make[1]: *** [Makefile:627: all-recursive] Error 1
+make[1]: Leaving directory '/tmp/tigervnc/unix/xserver/hw'
+make: *** [Makefile:829: all-recursive] Error 1
+make: Leaving directory '/tmp/tigervnc/unix/xserver'
+
+
+#
+# -lbrotlidec -lbrotlicommon 
+sed 's/^XSERVER_SYS_LIBS = .*/XSERVER_SYS_LIBS = -lXau -lXdmcp -lpixman-1 -ljpeg -lXfont2 -lfreetype -lfontenc -lpng16 -lz -lbz2 -lgnutls -lhogweed -lgmp -lnettle -lunistring -ltasn1 -lbsd -lmd/' -i $mkfile
+# root@8079dd943b72:/tmp/tigervnc/unix/xserver# make -C /tmp/tigervnc/unix/xserver -j$(nproc)
+make[2]: Entering directory '/tmp/tigervnc/unix/xserver/hw/vnc'
+  CXXLD    Xvnc
+/usr/bin/ld: ../../../../common/rfb/.libs/librfb.a(pam.c.o): in function `do_pam_auth':
+pam.c:(.text+0x39): undefined reference to `pam_start'
+/usr/bin/ld: pam.c:(.text+0x4b): undefined reference to `pam_authenticate'
+/usr/bin/ld: pam.c:(.text+0x5d): undefined reference to `pam_acct_mgmt'
+/usr/bin/ld: pam.c:(.text+0x6b): undefined reference to `pam_end'
+collect2: error: ld returned 1 exit status
+make[2]: *** [Makefile:852: Xvnc] Error 1
+make[2]: Leaving directory '/tmp/tigervnc/unix/xserver/hw/vnc'
+make[1]: *** [Makefile:627: all-recursive] Error 1
+make[1]: Leaving directory '/tmp/tigervnc/unix/xserver/hw'
+make: *** [Makefile:829: all-recursive] Error 1
+make: Leaving directory '/tmp/tigervnc/unix/xserver'
+
+
+# try032(disable-pam.patch):
+SCRIPT_DIR=/build
+# Disable PAM support.
+patch -p1 -d /tmp/tigervnc < "$SCRIPT_DIR"/disable-pam.patch
+
+# disable-pam后: static 生成OK
+# mark: +patch,改cmake参; make unix/xserver 可利用上之前构建文件|提速
+
+```
+
+- xkb fix build
+
+```bash
+# xkb;
+XKEYBOARDCONFIG_VERSION=2.32
+XKBCOMP_VERSION=1.4.5
+
+XKEYBOARDCONFIG_URL=https://www.x.org/archive/individual/data/xkeyboard-config/xkeyboard-config-${XKEYBOARDCONFIG_VERSION}.tar.bz2
+XKBCOMP_URL=https://www.x.org/releases/individual/app/xkbcomp-${XKBCOMP_VERSION}.tar.bz2
+function down_catfile(){
+  url=$1
+  file=${url##*/}
+  #curl -# -L -f 
+  test -f /mnt/$file || curl -# -k -fSL $url > /mnt/$file
+  cat /mnt/$file
+}
+
+mkdir -p /tmp/xkb
+log "Downloading XKeyboardConfig..."
+down_catfile ${XKEYBOARDCONFIG_URL} | tar -xj --strip 1 -C /tmp/xkb
+log "Configuring XKeyboardConfig..."
+(
+    cd /tmp/xkb && abuild-meson . build
+)
+log "Compiling XKeyboardConfig..."
+meson compile -C /tmp/xkb/build
+log "Installing XKeyboardConfig..."
+DESTDIR="/tmp/xkb-install" meson install --no-rebuild -C /tmp/xkb/build
+
+```

@@ -4,7 +4,6 @@ FROM infrastlabs/x11-base:deb12-rootfs as bin2
 FROM ubuntu:20.04 as files1
   COPY --from=bin /rootfs /rootfs/
   COPY --from=bin2 /rootfs /rootfs/
-  RUN chmod +x /rootfs/conf/usr/bin/*
 
 FROM ubuntu:20.04 as files2
   # ARG TARGETPLATFORM
@@ -20,7 +19,7 @@ FROM ubuntu:20.04 as files2
   # ADD src/etc /rootfs/etc
   ADD src/svd.conf /rootfs/etc/supervisor/supervisord.conf
   ADD src/sv.conf /rootfs/etc/supervisor/conf.d/sv.conf
-  RUN chmod +x /rootfs/*.sh
+  RUN chmod +x /rootfs/*.sh; chmod +x /rootfs/usr/bin/*
 
 FROM ubuntu:20.04
 ENV \

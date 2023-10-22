@@ -6,12 +6,12 @@ FROM ubuntu:20.04 as files1
   COPY --from=bin2 /rootfs /rootfs/
 
 FROM ubuntu:20.04 as files2
-  ARG TARGETPLATFORM
-  RUN export DOMAIN="mirrors.ustc.edu.cn"; \
-  test -z "$(echo $TARGETPLATFORM |grep arm)" && target=ubuntu || target=ubuntu-ports; \
-  echo "deb http://${DOMAIN}/$target focal main restricted universe multiverse" > /etc/apt/sources.list \
-  && echo "deb http://${DOMAIN}/$target focal-updates main restricted universe multiverse">> /etc/apt/sources.list; \
-  apt update && apt -y install curl
+  # ARG TARGETPLATFORM
+  # RUN export DOMAIN="mirrors.ustc.edu.cn"; \
+  # test -z "$(echo $TARGETPLATFORM |grep arm)" && target=ubuntu || target=ubuntu-ports; \
+  # echo "deb http://${DOMAIN}/$target focal main restricted universe multiverse" > /etc/apt/sources.list \
+  # && echo "deb http://${DOMAIN}/$target focal-updates main restricted universe multiverse">> /etc/apt/sources.list; \
+  # apt update && apt -y install curl
   # 
   COPY src/*.sh /rootfs/
   ADD src/dot /rootfs/etc/skel

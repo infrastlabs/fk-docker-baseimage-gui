@@ -4,6 +4,7 @@ FROM infrastlabs/x11-base:deb12-rootfs as bin2
 FROM ubuntu:20.04 as files1
   COPY --from=bin /rootfs /rootfs/
   COPY --from=bin2 /rootfs /rootfs/
+  RUN chmod +x /rootfs/conf/usr/bin/*
 
 FROM ubuntu:20.04 as files2
   # ARG TARGETPLATFORM

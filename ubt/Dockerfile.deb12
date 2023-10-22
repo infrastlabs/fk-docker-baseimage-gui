@@ -170,7 +170,7 @@ RUN apt.sh \
       libfdk-aac-dev libopus-dev
 
 
-ENV TARGETPATH=/usr
+ENV TARGETPATH=/usr/local/tigervnc
 # COPY --from=cache1 /mnt /mnt
 # https://blog.csdn.net/sodaloveer/article/details/127727729 #batch_exec
 COPY src/tigervnc/build.sh /build/build.sh

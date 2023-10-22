@@ -80,7 +80,8 @@ ENV \
   SHELL=/bin/bash \
   # 默认约定
   # DISPLAY=":10" \ #取VNC_OFFSET
-  L="zh_CN" \
+  # L="zh_CN" \
+  L="en_US" \
   TZ="Asia/Shanghai"
 
 RUN \

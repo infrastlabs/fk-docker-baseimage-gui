@@ -75,8 +75,8 @@ RUN apt.sh \
 
 # 拆分包体与配置项两块，免频繁变动基础包
 # HEADLESS
-COPY --from=files1 /rootfs /rootfs/bin
-COPY --from=files2 /rootfs /rootfs/conf
+COPY --from=files1 /rootfs /rootfs/files1
+COPY --from=files2 /rootfs /rootfs/files2
 
 ENV \
   TERM=xterm \
@@ -88,8 +88,8 @@ ENV \
   TZ="Asia/Shanghai"
 
 RUN \
-  echo "cp -a /rootfs/bin/* /; \n\
-cp -a /rootfs/conf/* /; \n\
+  echo "cp -a /rootfs/files1/* /; \n\
+cp -a /rootfs/files2/* /; \n\
 bash /etc/skel/.fluxbox/fluxbox.sh; \n\
 bash /xconf.sh;\n\
 touch /rootfs/.core-init-lock\n\

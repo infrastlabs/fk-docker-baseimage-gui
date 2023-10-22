@@ -1,6 +1,8 @@
 FROM infrastlabs/x11-base:rootfs as bin
+FROM infrastlabs/x11-base:deb12-rootfs as bin2
 FROM ubuntu:20.04 as files1
   COPY --from=bin /rootfs /rootfs/
+  COPY --from=bin2 /rootfs /rootfs/
 
 FROM ubuntu:20.04 as files2
   ARG TARGETPLATFORM
@@ -20,7 +22,8 @@ FROM ubuntu:20.04 as files2
 FROM ubuntu:20.04
 ENV \
   DEBIAN_FRONTEND=noninteractive \
-  LOCALE_INCLUDE="zh_CN zh_HK zh_TW en en_AU fr fr_CA pt pt_BR es ar cs de it ru nl tr is sv uk ja ko th vi"
+  LOCALE_INCLUDE="en"
+  # LOCALE_INCLUDE="zh_CN zh_HK zh_TW en en_AU fr fr_CA pt pt_BR es ar cs de it ru nl tr is sv uk ja ko th vi"
 ARG TARGETPLATFORM
 RUN export DOMAIN="mirrors.ustc.edu.cn"; \
   test -z "$(echo $TARGETPLATFORM |grep arm)" && target=ubuntu || target=ubuntu-ports; \
@@ -56,12 +59,15 @@ path-exclude /usr/share/lintian/*\n\
   procps sudo iproute2 iptables zip unzip xz-utils vim-tiny \
   dropbear-bin dropbear-run openssh-sftp-server lftp jq;
 
+# libicu66: 
+#  adwaita-icon-theme clipit dunst humanity-icon-theme
+#  libxml2 pnmixer shared-mime-info ubuntu-mono
 RUN apt.sh \
     # plank \ #compton-plank遮盖去域不可用
     # compton \
     xcompmgr \
-    dunst \
-    hsetroot pnmixer clipit \
+    hsetroot \
+    # dunst pnmixer clipit \
     fluxbox 
 
 # 拆分包体与配置项两块，免频繁变动基础包

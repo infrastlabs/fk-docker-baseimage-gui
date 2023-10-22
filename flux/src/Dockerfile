@@ -1,4 +1,5 @@
-FROM infrastlabs/x11-base:rootfs as bin
+FROM infrastlabs/docker-headless:core-compile2 as bin
+# FROM infrastlabs/x11-base:rootfs as bin2
 FROM infrastlabs/x11-base:deb12-rootfs as bin2
 FROM ubuntu:20.04 as files1
   COPY --from=bin /rootfs /rootfs/

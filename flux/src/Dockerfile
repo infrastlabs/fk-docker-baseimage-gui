@@ -20,7 +20,7 @@ FROM ubuntu:20.04 as files2
   # ADD src/etc /rootfs/etc
   ADD src/svd.conf /rootfs/etc/supervisor/supervisord.conf
   ADD src/sv.conf /rootfs/etc/supervisor/conf.d/sv.conf
-  RUN chmod +x /rootfs/**/*.sh
+  RUN chmod +x /rootfs/*.sh
 
 FROM ubuntu:20.04
 ENV \

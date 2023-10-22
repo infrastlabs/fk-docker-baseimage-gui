@@ -13,11 +13,11 @@ FROM ubuntu:20.04 as files2
   apt update && apt -y install curl
   # 
   COPY src/*.sh /rootfs/
-  # ADD src/etc /rootfs/etc
   ADD src/dot /rootfs/etc/skel
   ADD src/bin /rootfs/usr/bin
-  # ADD src/svd.conf /rootfs/etc/supervisor/supervisord.conf
-  # ADD src/sv.conf /rootfs/etc/supervisor/conf.d/sv.conf
+  ADD src/etc /rootfs/etc
+  ADD src/svd.conf /rootfs/etc/supervisor/supervisord.conf
+  ADD src/sv.conf /rootfs/etc/supervisor/conf.d/sv.conf
 
 FROM ubuntu:20.04
 ENV \

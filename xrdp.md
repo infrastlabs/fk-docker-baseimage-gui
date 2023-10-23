@@ -2,7 +2,7 @@
 
 ```bash
 # xrdp
-ver="0.9.16"
+ver="0.9.23" #0.9.16
 file=xrdp-${ver}.tar.gz; test -s $file || curl -k -O -fSL https://github.com/neutrinolabs/xrdp/releases/download/v${ver}/$file
 
 # tiger
@@ -16,7 +16,8 @@ file=tigervnc-1.12.0.tar.gz; test -s $file || curl -k -O -fSL https://github.com
 FROM stage-base as stage-xrdp
 ARG COMPILE_XRDP="yes"
 #0.9.5 > 0.9.16 > 0.9.19(thunar@gemmi-deb11卡死)
-ENV ver="0.9.16"
+# 0.9.16 > 0.9.23 #0.9.16@deb12: cc1-openssl3-warn-as-err
+ENV ver="0.9.23"
 # https://hub.fastgit.org/neutrinolabs/xrdp/wiki/Building-on-Debian-8
 # configure: error: please install libfdk-aac-dev or fdk-aac-devel
 		# --enable-tjpeg \

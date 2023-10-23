@@ -91,8 +91,8 @@ RUN echo a.1; \
   case ${TARGETPLATFORM} in \
     "linux/amd64")  arch=64-bit    ;; \
     "linux/arm64")  arch=ARM64     ;; \
-    "linux/arm/v7") arch=ARM64v7   ;; \
-    "linux/arm/v6") arch=ARM64v6   ;; \
+    "linux/arm/v7") arch=ARMv7   ;; \
+    "linux/arm/v6") arch=ARMv6   ;; \
     "linux/386")    arch=NONE_i386 ;; \
   esac; \
   cd /tmp; curl -fSL -O https://ghproxy.com/https://github.com/ochinchina/supervisord/releases/download/v0.7.3/supervisord_0.7.3_Linux_$arch.tar.gz; \

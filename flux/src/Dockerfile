@@ -99,6 +99,14 @@ RUN echo a.1; \
   tar -zxf supervisord_0.7.3_Linux_$arch.tar.gz; \cp -a supervisord_0.7.3_Linux_$arch/supervisord /usr/local/bin/go-supervisord; \
   rm -rf /tmp/supervisord_0.7.3_Linux*; ls -lh /usr/local/bin/
 # go-sv armv7: config arr err out of idx
+
+#45 63.93 The following NEW packages will be installed:
+#45 63.93   libmpdec2 libpython3-stdlib libpython3.8-minimal libpython3.8-stdlib
+#45 63.93   mime-support python3 python3-minimal python3-pkg-resources python3.8
+#45 63.93   python3.8-minimal supervisor
+#45 64.51 0 upgraded, 11 newly installed, 0 to remove and 0 not upgraded.
+#45 64.51 Need to get 5177 kB of archives.
+#45 64.51 After this operation, 21.6 MB of additional disk space will be used.
 RUN apt.sh supervisor
 
 # 拆分包体与配置项两块，免频繁变动基础包

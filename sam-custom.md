@@ -26,5 +26,19 @@ deb12_glibc环境/clang编译, +pam/static.patch `-DENABLE_GNUTLS=OFF`
 
 ```
 
+- st simpleterminal
 
+```bash
+# ref g-dev1/fk-alpine-xfce4-xrdp/src/branch/sam-custom/gw/Dockerfile
+    1  cd /mnt2/
+    2  git clone https://ghproxy.com/https://github.com/LukeSmithxyz/st
+    3  cd st/
+    7  apt update
+   10  apt install libharfbuzz-dev
+   13  apt install libfontconfig-dev
+   15  apt install libxft-dev
+   16  make
+   17  echo $?
+   18  make install
+```
 

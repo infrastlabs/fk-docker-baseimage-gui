@@ -77,7 +77,7 @@ flux)
     cache="--cache-from type=registry,ref=$ali/$ns/$cimg --cache-to type=registry,ref=$ali/$ns/$cimg"
     
     plat="--platform linux/amd64,linux/arm64,linux/arm" #,linux/arm
-    plat="--platform linux/amd64"
+    # plat="--platform linux/amd64"
     cd flux
     docker buildx build $cache $plat --push -t $repo/$ns/$img -f src/Dockerfile . 
     ;;

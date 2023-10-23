@@ -98,6 +98,8 @@ RUN echo a.1; \
   cd /tmp; curl -fSL -O https://ghproxy.com/https://github.com/ochinchina/supervisord/releases/download/v0.7.3/supervisord_0.7.3_Linux_$arch.tar.gz; \
   tar -zxf supervisord_0.7.3_Linux_$arch.tar.gz; \cp -a supervisord_0.7.3_Linux_$arch/supervisord /usr/local/bin/go-supervisord; \
   rm -rf /tmp/supervisord_0.7.3_Linux*; ls -lh /usr/local/bin/
+# go-sv armv7: config arr err out of idx
+RUN apt.sh supervisor
 
 # 拆分包体与配置项两块，免频繁变动基础包
 # HEADLESS

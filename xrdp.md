@@ -110,7 +110,10 @@ unset CFLAGS CXXFLAGS CPPFLAGS LDFLAGS
     --enable-fuse \
     --enable-mp3lame \
     --enable-pixman \
-    CFLAGS='$CFLAGS -Wno-format';
+    --enable-static \
+    --disable-pam \
+    CFLAGS='-Wno-format';
+    # CFLAGS='$CFLAGS -Wno-format'; #err
 
 # root@0aca931e9512:/mnt2/xrdp-0.9.23# ./configure     --prefix=/usr/local/xrdp     --enable-vsock     --enable-fdkaac     --enable-opus     --enable-fuse     --enable-mp3lame     --enable-pixman
 checking how to run the C preprocessor... gcc -E
@@ -175,4 +178,41 @@ root@0aca931e9512:/mnt2/xrdp-0.9.23# echo $?
 # 
 make;
 make install;
+```
+
+- ref args
+
+```bash
+# https://github.com/PWN-Term/pwn-packages/blob/df4740ecf3dc3433c869abd515964e60dea7dd0c/packages/xrdp/build.sh
+    # --enable-static \
+    # --disable-pam
+
+# https://github.com/gdsotirov/xrdp.SlackBuild/blob/7a80aa9d328a21525948266863baf4cc4171f3f8/xrdp.SlackBuild#L66
+CONFFLAGS=" --build="${ARCH}-slackware-linux" \
+            --host="${ARCH}-slackware-linux" \
+            --prefix=/usr \
+            --libdir=/usr/lib${LIBDIRSUFFIX} \
+            --sysconfdir=/etc \
+            --localstatedir=/var \
+            --docdir=/usr/doc \
+            --mandir=/usr/man \
+            --disable-silent-rules \
+            --disable-dependency-tracking"
+#           --enable-xrdpvr      # Slackware is not supported
+#           --enable-neutrinordp # Not available for Slackware
+CFLAGS="$SLKCFLAGS" \
+CXXFLAGS="$SLKCFLAGS" \
+./configure ${CONFFLAGS} \
+            --enable-shared=yes \
+            --enable-static=no \
+            --enable-ipv6 \
+            --enable-jpeg \
+            --enable-tjpeg \
+            --enable-fuse \
+            --enable-opus \
+            --enable-mp3lame \
+            --enable-pixman \
+            --enable-painter \
+            --enable-rfxcodec || exit 60
+
 ```

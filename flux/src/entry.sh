@@ -220,4 +220,5 @@ cnt=0.1
 echo "sleep $cnt" && sleep $cnt;
 test "true" != "$START_SYSTEMD" || rm -f /etc/supervisor/conf.d/x$VNC_OFFSET-de.conf
 # supervisord -n> go-supervisord
-test "true" != "$START_SYSTEMD" && exec go-supervisord || exec /lib/systemd/systemd
+exec supervisord -n
+# test "true" != "$START_SYSTEMD" && exec go-supervisord || exec /lib/systemd/systemd

@@ -1,6 +1,9 @@
 
 - xdpyprobe
-- tigervnc
+- fluxbox TODO 
+- xrdp TODO #https://github.com/neutrinolabs/xrdp
+- tigervnc https://github.com/TigerVNC/tigervnc
+  - xorg-server https://github.com/XQuartz/xorg-server #https://gitlab.freedesktop.org/xorg/xserver
   - tiger-static `-DENABLE_GNUTLS=OFF`@deb12/ubt2004
   - xkb
   - xkbcomp
@@ -9,8 +12,6 @@
   - openbox
   - yad
   - nginx/novnc
-- fluxbox TODO
-- xrdp TODO
 
 
 deb12_glibc环境/clang编译, +pam/static.patch `-DENABLE_GNUTLS=OFF`

@@ -6,12 +6,24 @@ FROM ubuntu:20.04 as files1
   COPY --from=bin2 /rootfs /rootfs/
 
 FROM ubuntu:20.04 as files2
-  # ARG TARGETPLATFORM
-  # RUN export DOMAIN="mirrors.ustc.edu.cn"; \
-  # test -z "$(echo $TARGETPLATFORM |grep arm)" && target=ubuntu || target=ubuntu-ports; \
-  # echo "deb http://${DOMAIN}/$target focal main restricted universe multiverse" > /etc/apt/sources.list \
-  # && echo "deb http://${DOMAIN}/$target focal-updates main restricted universe multiverse">> /etc/apt/sources.list; \
-  # apt update && apt -y install curl
+  ARG TARGETPLATFORM
+  RUN export DOMAIN="mirrors.ustc.edu.cn"; \
+    test -z "$(echo $TARGETPLATFORM |grep arm)" && target=ubuntu || target=ubuntu-ports; \
+    echo "deb http://${DOMAIN}/$target focal main restricted universe multiverse" > /etc/apt/sources.list \
+    && echo "deb http://${DOMAIN}/$target focal-updates main restricted universe multiverse">> /etc/apt/sources.list; \
+    apt update && apt -y install curl
+  # webhookd, noVNC
+  # https://gitee.com/infrastlabs/fk-webhookd/releases/download/v22.08.18/webhookd.tar.gz
+  RUN echo a.123; \
+    test -z "$(echo $TARGETPLATFORM |grep arm)" && file=webhookd.tar.gz || file=webhookd-arm64.tar.gz; \
+    cd /tmp; curl -fSL -k -O https://gitee.com/infrastlabs/fk-webhookd/releases/download/v22.08.18/$file; \
+    hookd=/rootfs/usr/local/webhookd; mkdir -p $hookd; tar -zxvf $file -C $hookd; rm -f $file; \
+    test -z "$(echo $TARGETPLATFORM |grep arm)" || mv $hookd/webhookd-arm64 $hookd/webhookd; \
+    test -z "$(echo $TARGETPLATFORM |grep arm)" || sed -i 's^cmd="go run ./"^cmd=./webhookd^g' $hookd/run.sh; \
+    \
+    # https://gitee.com/infrastlabs/fk-webhookd/releases/download/v22.08.18/v1.3.0.tar.gz #https://github.com/novnc/noVNC/archive
+    cd /rootfs/usr/local/webhookd/static; file=v1.3.0.tar.gz; curl -k -O -fSL https://gitee.com/infrastlabs/fk-webhookd/releases/download/v22.08.18/$file; \
+    bash down_vnc.sh; rm -f $file;
   # 
   COPY src/*.sh /rootfs/
   ADD src/dot /rootfs/etc/skel
@@ -71,6 +83,21 @@ RUN apt.sh \
     hsetroot \
     # dunst pnmixer clipit \
     fluxbox 
+
+# go-supervisor https://github.com/ochinchina/supervisord/releases
+RUN echo a.1; \
+  # test -z "$(echo $TARGETPLATFORM |grep arm)" && arch=64-bit || arch=ARM64; \
+  # test -z "$(echo $TARGETPLATFORM |grep arm/v7)" || arch=ARM64v7; \
+  case ${TARGETPLATFORM} in \
+    "linux/amd64")  arch=64-bit    ;; \
+    "linux/arm64")  arch=ARM64     ;; \
+    "linux/arm/v7") arch=ARM64v7   ;; \
+    "linux/arm/v6") arch=ARM64v6   ;; \
+    "linux/386")    arch=NONE_i386 ;; \
+  esac; \
+  cd /tmp; curl -fSL -O https://ghproxy.com/https://github.com/ochinchina/supervisord/releases/download/v0.7.3/supervisord_0.7.3_Linux_$arch.tar.gz; \
+  tar -zxf supervisord_0.7.3_Linux_$arch.tar.gz; \cp -a supervisord_0.7.3_Linux_$arch/supervisord /usr/local/bin/go-supervisord; \
+  rm -rf /tmp/supervisord_0.7.3_Linux*; ls -lh /usr/local/bin/
 
 # 拆分包体与配置项两块，免频繁变动基础包
 # HEADLESS

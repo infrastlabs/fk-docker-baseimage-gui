@@ -20,7 +20,7 @@ ARG COMPILE_XRDP="yes"
 ENV ver="0.9.23"
 # https://hub.fastgit.org/neutrinolabs/xrdp/wiki/Building-on-Debian-8
 # configure: error: please install libfdk-aac-dev or fdk-aac-devel
-		# --enable-tjpeg \
+    # --enable-tjpeg \
 # ./configure --prefix=/usr/local/xrdp --enable-fuse --enable-mp3lame --enable-pixman;\
 ADD src/arm /src/arm
 # RUN wget https://github.com/neutrinolabs/xrdp/releases/download/v${ver}/xrdp-${ver}.tar.gz; \
@@ -30,14 +30,14 @@ tar -zxf /src/arm/xrdp-${ver}.tar.gz;\
 cd xrdp-${ver};\
 ./bootstrap;\
 ./configure \
-		--prefix=/usr/local/xrdp \
-		--enable-vsock \
-		--enable-fdkaac \
-		--enable-opus \
-		--enable-fuse \
-		--enable-mp3lame \
-		--enable-pixman \
-		CFLAGS='-Wno-format';\
+    --prefix=/usr/local/xrdp \
+    --enable-vsock \
+    --enable-fdkaac \
+    --enable-opus \
+    --enable-fuse \
+    --enable-mp3lame \
+    --enable-pixman \
+    CFLAGS='-Wno-format';\
 make;\
 make install;
 
@@ -77,4 +77,102 @@ RUN test "yes" != "$COMPILE_PULSE" && exit 0 || echo doMake; \
   cd /opt/pulseaudio-module-xrdp/src/.libs && \
   install -t "/var/lib/xrdp-pulseaudio-installer" -D -m 644 *.so;
 
+```
+
+- **try static build**
+
+```bash
+root@0aca931e9512:/mnt2/xrdp-0.9.23# xx-verify --static /usr/local/xrdp/sbin/xrdp
+# file /usr/local/xrdp/sbin/xrdp is not statically linked: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=1966725d48e83c4bb385775179bbdfe9f73257f3, for GNU/Linux 3.2.0, not stripped
+root@0aca931e9512:/mnt2/xrdp-0.9.23# ls -lh  /usr/local/xrdp/sbin/     
+total 476K
+-rwxr-xr-x 1 root root 228K Oct 23 05:50 xrdp
+-rwxr-xr-x 1 root root 170K Oct 23 05:50 xrdp-chansrv
+-rwxr-xr-x 1 root root  73K Oct 23 05:50 xrdp-sesman
+
+
+# ref tiger/build.sh
+# Set same default compilation flags as abuild.
+export CFLAGS="-Os -fomit-frame-pointer"
+export CXXFLAGS="$CFLAGS"
+export CPPFLAGS="$CFLAGS"
+export LDFLAGS="-Wl,--as-needed --static -static -Wl,--strip-all"
+
+unset CFLAGS CXXFLAGS CPPFLAGS LDFLAGS
+
+# CFLAGS="$CFLAGS -Wno-error=inline" 
+./bootstrap;
+./configure \
+    --prefix=/usr/local/xrdp \
+    --enable-vsock \
+    --enable-fdkaac \
+    --enable-opus \
+    --enable-fuse \
+    --enable-mp3lame \
+    --enable-pixman \
+    CFLAGS='$CFLAGS -Wno-format';
+
+# root@0aca931e9512:/mnt2/xrdp-0.9.23# ./configure     --prefix=/usr/local/xrdp     --enable-vsock     --enable-fdkaac     --enable-opus     --enable-fuse     --enable-mp3lame     --enable-pixman
+checking how to run the C preprocessor... gcc -E
+checking for X... no
+configure: error: please install libx11-dev or libX11-devel
+# root@0aca931e9512:/mnt2/xrdp-0.9.23# apt install libx11-dev
+libx11-dev is already the newest version (2:1.8.4-2+deb12u2).
+
+# root@0aca931e9512:/mnt2/xrdp-0.9.23# ./configure \
+# >     --prefix=/usr/local/xrdp \
+# >     --enable-vsock \
+# >     --enable-fdkaac \
+# >     --enable-opus \
+# >     --enable-fuse \
+# >     --enable-mp3lame \
+# >     --enable-pixman \
+# >     CFLAGS='$CFLAGS -Wno-format';
+checking whether the C compiler works... no
+configure: error: in `/mnt2/xrdp-0.9.23':
+configure: error: C compiler cannot create executables
+See `config.log' for more details
+
+
+unset CFLAGS CXXFLAGS CPPFLAGS LDFLAGS
+# root@0aca931e9512:/mnt2/xrdp-0.9.23# ./configure     --prefix=/usr/local/xrdp     --enable-vsock     --enable-fdkaac     --enable-opus     --enable-fuse     --enable-mp3lame     --enable-pixman     CFLAGS='-Wno-format';
+xrdp will be compiled with:
+  mp3lame                 yes
+  opus                    yes
+  fdkaac                  yes
+  jpeg                    no
+  turbo jpeg              no
+  rfxcodec                yes
+  painter                 yes
+  pixman                  yes
+  fuse                    yes
+  ipv6                    no
+  ipv6only                no
+  vsock                   yes
+  auth mechanism          PAM
+  rdpsndaudin             no
+
+  with imlib2             no
+
+  development logging     no
+  development streamcheck no
+
+  strict_locations        no
+  prefix                  /usr/local/xrdp
+  exec_prefix             ${prefix}
+  libdir                  ${exec_prefix}/lib
+  bindir                  ${exec_prefix}/bin
+  sysconfdir              /etc
+  pamconfdir              /etc/pam.d
+
+  unit tests performable  yes
+
+  CFLAGS = -Wno-format -Wall -Wwrite-strings -Werror -O2
+  LDFLAGS = 
+root@0aca931e9512:/mnt2/xrdp-0.9.23# echo $?
+0
+
+# 
+make;
+make install;
 ```

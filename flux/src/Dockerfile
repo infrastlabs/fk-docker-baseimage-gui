@@ -111,7 +111,7 @@ ENV \
   # DISPLAY=":10" \ #取VNC_OFFSET
   # L="zh_CN" \
   L="en_US" \
-  TZ="Asia/Shanghai"
+  TZ="Asia/Shanghai" \
   \
   PORT_SSH=10022 \
   PORT_RDP=10089 \

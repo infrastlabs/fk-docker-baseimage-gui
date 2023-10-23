@@ -112,6 +112,15 @@ ENV \
   # L="zh_CN" \
   L="en_US" \
   TZ="Asia/Shanghai"
+  \
+  PORT_SSH=10022 \
+  PORT_RDP=10089 \
+  PORT_VNC=10081 \
+  # 
+  SSH_PASS=headless \
+  VNC_PASS=headless \
+  VNC_PASS_RO=View123 \
+  VNC_OFFSET=10
 
 RUN \
   echo "cp -a /rootfs/files1/* /; \n\

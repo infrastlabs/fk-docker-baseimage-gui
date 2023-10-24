@@ -28,7 +28,7 @@ FROM ubuntu:20.04 as files2
   COPY src/*.sh /rootfs/
   ADD src/dot /rootfs/etc/skel
   ADD src/bin /rootfs/usr/bin
-  # ADD src/etc /rootfs/etc
+  ADD src/etc /rootfs/etc
   ADD src/svd.conf /rootfs/etc/supervisor/supervisord.conf
   ADD src/sv.conf /rootfs/etc/supervisor/conf.d/sv.conf
   RUN chmod +x /rootfs/*.sh; chmod +x /rootfs/usr/bin/*

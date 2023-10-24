@@ -56,15 +56,22 @@ unset CFLAGS CXXFLAGS CPPFLAGS LDFLAGS
 # LDFLAGS = -L/usr/X11R6/lib -lm -lrt -lX11 -lutil -lXft -lXrender -lfontconfig -lfreetype   -lfreetype   -lharfbuzz  -Wl,--as-needed --static -static -Wl,--strip-all
 # CC      = c99
 c99 -o st st.o x.o boxdraw.o hb.o -L/usr/X11R6/lib -lm -lrt -lX11 -lutil -lXft -lXrender `pkg-config --libs fontconfig`  `pkg-config --libs freetype2`  `pkg-config --libs harfbuzz` -Wl,--as-needed --static -static -Wl,--strip-all
-/usr/bin/ld: cannot find -lharfbuzz: No such file or directory
+# /usr/bin/ld: cannot find -lharfbuzz: No such file or directory
 /usr/bin/ld: /usr/lib/gcc/x86_64-linux-gnu/12/../../../x86_64-linux-gnu/libX11.a(CrGlCur.o): in function `_XNoticeCreateBitmap':
 (.text+0x119): warning: Using 'dlopen' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
 /usr/bin/ld: st.o: in function `ttynew':
 st.c:(.text+0x1fe7): warning: Using 'getpwuid' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
 /usr/bin/ld: /usr/lib/gcc/x86_64-linux-gnu/12/../../../x86_64-linux-gnu/libX11.a(xim_trans.o): in function `_XimXTransSocketINETConnect':
 (.text+0xc92): warning: Using 'getaddrinfo' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
-collect2: error: ld returned 1 exit status
-make: *** [Makefile:29: st] Error 1
+# collect2: error: ld returned 1 exit status
+# make: *** [Makefile:29: st] Error 1
 root@b4efefabe635:/mnt2/st# cat Makefile |grep lX11
+
+
+# clang
+cd /tmp/libxfont2 && ./configure \
+        --build=$(TARGETPLATFORM= xx-clang --print-target-triple) \
+        --host=$(xx-clang --print-target-triple) \
+        --prefix=/usr
 ```
 

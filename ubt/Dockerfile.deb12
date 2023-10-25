@@ -188,13 +188,23 @@ RUN xx-verify --static /tmp/tigervnc-install/usr/bin/Xvnc; \
 # RUN upx /tmp/tigervnc-install/usr/bin/Xvnc; \
 #   upx /tmp/tigervnc-install/usr/bin/vncpasswd
 
+
+# +st
+RUN apt update; apt -y install libharfbuzz-dev libfontconfig-dev libxft-dev; \
+  mkdir -p /src; cd /src; git clone https://github.com/LukeSmithxyz/st;
+RUN cd /src/st; sed -i "s^PREFIX =.*^PREFIX = /usr/local/st^g" config.mk; \
+  make; make install
+
+# TARGETPATH=/usr/local/static
 RUN rm -rf /rootfs; mkdir -p /rootfs${TARGETPATH}/bin /rootfs${TARGETPATH}/share/X11; \
   \cp -a /tmp/tigervnc-install/usr/bin/Xvnc /rootfs${TARGETPATH}/bin/; \
   \cp -a /tmp/tigervnc-install/usr/bin/vncpasswd /rootfs${TARGETPATH}/bin/; \
   \cp -a /tmp/xkb-install/usr/local/share/X11/xkb /rootfs${TARGETPATH}/share/X11/xkb; \
   \cp -a /tmp/xkbcomp-install/usr/bin/xkbcomp /rootfs${TARGETPATH}/bin/; \
   #\cp -a /tmp/xdpyprobe/xdpyprobe /rootfs${TARGETPATH}/bin/; \
-  \cp -a /tmp/logs /rootfs/
+  \cp -a /tmp/logs /rootfs/; \
+  \
+  mkdir -p /rootfs/usr/local/st; \cp -a /usr/local/st/* /rootfs/usr/local/st/;
 
 # validate
 RUN du -sh /rootfs; \

@@ -1,0 +1,9 @@
+test -z "$TARGETPATH" && export TARGETPATH=/opt/base
+dest=/mnt
+function down_catfile(){
+  url=$1
+  file=${url##*/}
+  #curl -# -L -f 
+  test -f $dest/$file || curl -# -k -fSL $url > $dest/$file
+  cat $dest/$file
+}
